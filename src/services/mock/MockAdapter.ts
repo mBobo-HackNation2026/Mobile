@@ -423,7 +423,7 @@ function buildChecklist(profile: ParentProfile): ChecklistItem[] {
       title: 'Sprawdź tytuł do ubezpieczenia chorobowego',
       description:
         'Bez potwierdzenia składek nie da się wiarygodnie ocenić zasiłku — to warunek wejściowy.',
-      status: profile.insuranceStatus === 'insured' ? 'done' : 'now',
+      status: profile.insuranceStatus === 'insured' ? 'done' : 'todo',
       dueDate: null,
       documents: [],
       office: 'ZUS / PUE ZUS',
@@ -437,7 +437,7 @@ function buildChecklist(profile: ParentProfile): ChecklistItem[] {
       title: 'Przygotuj wniosek ZAM',
       description:
         'Aktualny formularz po 24.10.2026 (ZUR/ZAO → ZAM). Bez wniosku nie uruchomisz wypłaty.',
-      status: 'now',
+      status: 'todo',
       dueDate: zamDue,
       documents: ['ZAM'],
       office: 'ZUS lub pracodawca',
@@ -451,7 +451,7 @@ function buildChecklist(profile: ParentProfile): ChecklistItem[] {
       title: 'Zaplanuj podział urlopów',
       description:
         'Pomaga ustalić, kto kiedy korzysta z urlopu — kwoty policzy backend, gdy będzie dostępny.',
-      status: profile.hasSecondParent ? 'now' : 'later',
+      status: profile.hasSecondParent ? 'todo' : 'pending',
       dueDate: formatISO(addDays(event, -14), { representation: 'date' }),
       documents: [],
       office: null,
@@ -464,7 +464,7 @@ function buildChecklist(profile: ParentProfile): ChecklistItem[] {
       id: 'notify-employer',
       title: 'Poinformuj pracodawcę o terminach',
       description: 'Pracodawca musi wiedzieć o wnioskach i terminach urlopu w firmie.',
-      status: 'later',
+      status: 'pending',
       dueDate: formatISO(addDays(event, -21), { representation: 'date' }),
       documents: ['ZAM'],
       office: 'Pracodawca',
@@ -484,7 +484,7 @@ function buildChecklist(profile: ParentProfile): ChecklistItem[] {
           ? 'Po przyjęciu dziecka — domknij dokumenty'
           : 'Po porodzie — sprawdź kolejne kroki',
       description: 'Domknięcie wniosków po wydarzeniu zmniejsza ryzyko spóźnionych terminów.',
-      status: 'later',
+      status: 'pending',
       dueDate: afterDue,
       documents: ['ZAM'],
       office: 'ZUS',
@@ -501,7 +501,7 @@ function buildChecklist(profile: ParentProfile): ChecklistItem[] {
         id: 'learn-benefits',
         title: 'Poznaj dostępne świadczenia',
         description: 'Na etapie planowania zbierz wymagania i oficjalne źródła — bez pośpiechu.',
-        status: 'now',
+        status: 'todo',
         dueDate: null,
         documents: [],
         office: null,
@@ -510,7 +510,7 @@ function buildChecklist(profile: ParentProfile): ChecklistItem[] {
         ctaHref: '/benefits',
         priority: 'optional',
       },
-      ...items.slice(0, 2).map((item) => ({ ...item, status: 'later' as const })),
+      ...items.slice(0, 2).map((item) => ({ ...item, status: 'pending' as const })),
     ];
   }
 
@@ -763,7 +763,7 @@ function buildPostpartumKit(profile: ParentProfile): PostpartumKit {
         documents: isAdoptionLike
           ? ['Orzeczenie / decyzja', 'Dokument tożsamości']
           : ['Akt urodzenia', 'Dokument tożsamości'],
-        status: 'now',
+        status: 'todo',
         dueDate: formatISO(addDays(event, 7), { representation: 'date' }),
         ctaLabel: 'Asystent dokumentów',
         ctaHref: '/documents',
@@ -775,7 +775,7 @@ function buildPostpartumKit(profile: ParentProfile): PostpartumKit {
         description:
           'Sprawdź, czy wniosek i załączniki są kompletne. Formularze: aktualny ZAM.',
         documents: ['ZAM'],
-        status: 'now',
+        status: 'todo',
         dueDate: formatISO(addDays(event, 14), { representation: 'date' }),
         ctaLabel: 'Szczegóły świadczenia',
         ctaHref: '/benefits/maternity',
@@ -787,7 +787,7 @@ function buildPostpartumKit(profile: ParentProfile): PostpartumKit {
         description:
           'Ustal w firmie kolejne kroki urlopu rodzicielskiego / powrotu. Nie jest to wniosek do ZUS.',
         documents: ['Informacja do pracodawcy'],
-        status: 'later',
+        status: 'pending',
         dueDate: formatISO(addDays(event, 21), { representation: 'date' }),
         ctaLabel: 'Otwórz sprawy',
         ctaHref: '/sprawy',
@@ -800,7 +800,7 @@ function buildPostpartumKit(profile: ParentProfile): PostpartumKit {
         description:
           'Tylko wskazanie oficjalnego źródła — eBobo nie ocenia tu Twojego prawa do świadczenia.',
         documents: [],
-        status: 'later',
+        status: 'pending',
         dueDate: null,
         ctaLabel: 'Sprawdź również',
         ctaHref: '/benefits',
@@ -902,8 +902,8 @@ export class MockEligibilityAdapter implements EligibilityService {
     const checklist = buildChecklist(profile);
     const deadlines = buildDeadlines(profile);
     const benefits = buildBenefits(profile);
-    const nowItems = checklist.filter((item) => item.status === 'now');
-    const next = nowItems[0];
+    const openItems = checklist.filter((item) => item.status === 'todo');
+    const next = openItems[0];
     const topBenefit = benefits[0];
     const nearestDeadline = [...deadlines].sort((a, b) =>
       a.submitBy.localeCompare(b.submitBy),

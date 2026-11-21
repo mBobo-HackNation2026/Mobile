@@ -78,12 +78,8 @@ export function BenefitDetailScreen() {
   const institutionId = resolveBenefitInstitution(benefit);
 
   return (
-    <Screen>
+    <Screen title={benefit.title} subtitle={benefit.headline} backFallbackHref="/benefits">
       <DemoBanner />
-      <Link href="/benefits">
-        <Text style={styles.link}>← Moje świadczenia</Text>
-      </Link>
-
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Badge label={BENEFIT_STATUS_LABEL[benefit.status]} tone={BENEFIT_TONE[benefit.status]} />
@@ -91,8 +87,6 @@ export function BenefitDetailScreen() {
             <InstitutionMark institutionId={institutionId} withLabel size="md" />
           ) : null}
         </View>
-        <Text style={styles.title}>{benefit.title}</Text>
-        <Text style={styles.subtitle}>{benefit.headline}</Text>
         {institutionId ? (
           <Text style={styles.meta}>Adresat: {INSTITUTIONS[institutionId].fullLabel}</Text>
         ) : null}
@@ -217,8 +211,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary },
   section: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
   body: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   meta: { ...typography.small, color: colors.textMuted, marginBottom: spacing.xs },

@@ -2,19 +2,19 @@ import type { LucideIcon } from 'lucide-react-native';
 import {
   Briefcase,
   Calculator,
-  ShieldCheck,
+  Home,
   UserRound,
 } from 'lucide-react-native';
 
 export interface NavItem {
-  href: '/benefits' | '/sprawy' | '/calculator' | '/profile';
+  href: '/home' | '/sprawy' | '/calculator' | '/profile';
   label: string;
   icon: LucideIcon;
 }
 
-/** Główna nawigacja wg briefu: Świadczenia | Sprawy | Kalkulator | Profil */
+/** Dolne menu: Start (koła) | Sprawy | Kalkulator | Profil — świadczenia z dużego koła. */
 export const mainNavItems: NavItem[] = [
-  { href: '/benefits', label: 'Świadczenia', icon: ShieldCheck },
+  { href: '/home', label: 'Start', icon: Home },
   { href: '/sprawy', label: 'Sprawy', icon: Briefcase },
   { href: '/calculator', label: 'Kalkulator', icon: Calculator },
   { href: '/profile', label: 'Profil', icon: UserRound },
@@ -22,6 +22,7 @@ export const mainNavItems: NavItem[] = [
 
 /** Dodatkowe linki w expanded sidebar / profilu */
 export const secondaryNavItems = [
+  { href: '/benefits' as const, label: 'Świadczenia ZUS' },
   { href: '/other-benefits' as const, label: 'Inne świadczenia' },
   { href: '/eligibility' as const, label: 'Ocena API (macierzyński)' },
   { href: '/plan' as const, label: 'Checklista' },

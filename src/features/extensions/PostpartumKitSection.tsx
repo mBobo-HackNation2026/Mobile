@@ -65,9 +65,19 @@ export function PostpartumKitSection({ kit }: PostpartumKitSectionProps) {
             />
             <Badge
               label={
-                item.status === 'now' ? 'Teraz' : item.status === 'done' ? 'Zrobione' : 'Później'
+                item.status === 'done'
+                  ? 'Wykonane'
+                  : item.status === 'pending'
+                    ? 'Oczekujące'
+                    : 'Do zrobienia'
               }
-              tone={item.status === 'now' ? 'danger' : 'neutral'}
+              tone={
+                item.status === 'done'
+                  ? 'success'
+                  : item.status === 'pending'
+                    ? 'warning'
+                    : 'primary'
+              }
             />
           </View>
           <Text style={styles.cardTitle}>{item.title}</Text>

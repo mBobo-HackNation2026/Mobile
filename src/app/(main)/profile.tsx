@@ -29,14 +29,11 @@ export default function ProfileScreen() {
   const clearDocAssistant = useDocumentAssistantStore((s) => s.clearOverrides);
 
   return (
-    <Screen>
+    <Screen
+      title="Profil i scenariusz"
+      subtitle="Edytuj ankietę albo zrestartuj demo. Zmiany od razu wpływają na plan i kalkulator."
+    >
       <DemoBanner message="Profil ankiety jest lokalny. Sesja mObywatel poniżej to wyłącznie DEMO API." />
-      <View style={styles.header}>
-        <Text style={styles.title}>Profil i scenariusz</Text>
-        <Text style={styles.subtitle}>
-          Edytuj ankietę albo zrestartuj demo. Zmiany od razu wpływają na plan i kalkulator.
-        </Text>
-      </View>
 
       <SessionCard />
 
@@ -114,9 +111,6 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',

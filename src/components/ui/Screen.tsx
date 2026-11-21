@@ -1,3 +1,4 @@
+import { router, usePathname, type Href } from 'expo-router';
 import { ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
@@ -8,8 +9,14 @@ import {
 } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
+import { AppHeader } from '@/components/ui/AppHeader';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import { colors, spacing } from '@/theme';
+
+/** Start — bez „Wróć”. */
+const HOME_PATHS = new Set(['/home', '/']);
+/** Zakładki dolnego menu — „Wróć” tylko gdy jest historia. */
+const TAB_PATHS = new Set(['/home', '/sprawy', '/calculator', '/profile']);
 
 interface ScreenProps {
   children: ReactNode;
@@ -20,6 +27,19 @@ interface ScreenProps {
   keyboard?: boolean;
   /** Offset KAV — np. gdy Stack ma własny header. */
   keyboardOffset?: number;
+  /**
+   * Przycisk „Wróć”.
+   * Domyślnie: poza Startem — zawsze na ekranach poza dolnym menu;
+   * na zakładkach tylko gdy jest historia nawigacji.
+   */
+  back?: boolean;
+  backLabel?: string;
+  backFallbackHref?: Href;
+  /** Tytuł w sticky headerze. Brak → marka eBobo. */
+  title?: string;
+  subtitle?: string;
+  /** Ukryj sticky header (np. ankieta z własną nawigacją). */
+  header?: boolean;
 }
 
 export function Screen({
@@ -29,16 +49,37 @@ export function Screen({
   edges,
   keyboard = true,
   keyboardOffset = 0,
+  back,
+  backLabel,
+  backFallbackHref = '/home',
+  title,
+  subtitle,
+  header = true,
 }: ScreenProps) {
+  const pathname = usePathname();
   const { contentMaxWidth, isCompact, showBottomNav } = useAdaptiveLayout();
 
+  const showBack =
+    back === true ||
+    (back !== false &&
+      !HOME_PATHS.has(pathname) &&
+      (!TAB_PATHS.has(pathname) || router.canGoBack()));
+
+  /**
+   * Gdy jest AppHeader — top inset bierze header (ten sam kolor pod notchem).
+   * Bez headera — SafeAreaView pilnuje góry jak dotychczas.
+   */
   const resolvedEdges: Edge[] =
     edges ??
-    (showBottomNav
-      ? ['top', 'left', 'right']
-      : ['top', 'bottom', 'left', 'right']);
+    (header
+      ? showBottomNav
+        ? ['left', 'right']
+        : ['bottom', 'left', 'right']
+      : showBottomNav
+        ? ['top', 'left', 'right']
+        : ['top', 'bottom', 'left', 'right']);
 
-  const content = (
+  const bodyContent = (
     <View
       style={[
         styles.inner,
@@ -61,14 +102,23 @@ export function Screen({
       keyboardDismissMode="on-drag"
       showsVerticalScrollIndicator={false}
     >
-      {content}
+      {bodyContent}
     </ScrollView>
   ) : (
-    <View style={styles.flex}>{content}</View>
+    <View style={styles.flex}>{bodyContent}</View>
   );
 
   return (
     <SafeAreaView style={styles.root} edges={resolvedEdges}>
+      {header ? (
+        <AppHeader
+          title={title}
+          subtitle={subtitle}
+          showBack={showBack}
+          backLabel={backLabel}
+          backFallbackHref={backFallbackHref}
+        />
+      ) : null}
       {keyboard ? (
         <KeyboardAvoidingView
           style={styles.flex}
@@ -100,7 +150,7 @@ const styles = StyleSheet.create({
   inner: {
     width: '100%',
     alignSelf: 'center',
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
     gap: spacing.lg,
   },
 });

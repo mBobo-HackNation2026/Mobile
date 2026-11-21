@@ -161,7 +161,12 @@ export function OnboardingWizard() {
   };
 
   return (
-    <Screen edges={['left', 'right', 'bottom']} keyboardOffset={Platform.OS === 'ios' ? 64 : 0}>
+    <Screen
+      header={false}
+      back={false}
+      edges={['left', 'right', 'bottom']}
+      keyboardOffset={Platform.OS === 'ios' ? 64 : 0}
+    >
       <DemoBanner message="Ankieta jest lokalna — nic nie wysyłamy do ZUS. To nie jest wniosek urzędowy." />
       <View style={styles.header}>
         <Text style={styles.title}>

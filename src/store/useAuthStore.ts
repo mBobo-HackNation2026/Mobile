@@ -18,6 +18,7 @@ import {
 } from '@/services/api/tokenStorage';
 
 type AuthPhase = 'idle' | 'bootstrapping' | 'ready' | 'error';
+export type EntryMode = 'guest' | 'mobywatel' | null;
 
 interface AuthState {
   phase: AuthPhase;
@@ -25,15 +26,21 @@ interface AuthState {
   userId: string | null;
   status: AuthStatus | null;
   profile: UserProfile | null;
+  /** Jak użytkownik wszedł z ekranu loginu (lokalnie, nie z JWT). */
+  entryMode: EntryMode;
   sessionExpiredNotice: string | null;
   bootstrapError: string | null;
   isLoggingIn: boolean;
+  isEnteringAsGuest: boolean;
   bootstrap: () => Promise<void>;
+  /** Gość: zapewnia sesję anonimową jeśli się da, nigdy nie blokuje UI. */
+  enterAsGuest: () => Promise<void>;
   loginMobywatel: () => Promise<void>;
   startNewAnonymousSession: () => Promise<void>;
   handleUnauthorized: () => Promise<void>;
   clearSessionExpiredNotice: () => void;
   refreshProfile: () => Promise<void>;
+  setEntryMode: (mode: EntryMode) => void;
 }
 
 let bootstrapPromise: Promise<void> | null = null;
@@ -49,9 +56,13 @@ export const useAuthStore = create<AuthState>((set, get) => {
     userId: null,
     status: null,
     profile: null,
+    entryMode: null,
     sessionExpiredNotice: null,
     bootstrapError: null,
     isLoggingIn: false,
+    isEnteringAsGuest: false,
+
+    setEntryMode: (mode) => set({ entryMode: mode }),
 
     bootstrap: async () => {
       if (bootstrapPromise) return bootstrapPromise;
@@ -148,6 +159,22 @@ export const useAuthStore = create<AuthState>((set, get) => {
       return bootstrapPromise;
     },
 
+    enterAsGuest: async () => {
+      set({ isEnteringAsGuest: true, sessionExpiredNotice: null });
+      try {
+        if (!get().accessToken) {
+          try {
+            await get().startNewAnonymousSession();
+          } catch {
+            // Brief: awaria sesji nie blokuje ankiety / silnika.
+          }
+        }
+        set({ entryMode: 'guest', isEnteringAsGuest: false });
+      } catch {
+        set({ entryMode: 'guest', isEnteringAsGuest: false });
+      }
+    },
+
     loginMobywatel: async () => {
       set({ isLoggingIn: true, sessionExpiredNotice: null });
       try {
@@ -168,6 +195,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
           userId: session.user_id,
           status: session.status,
           profile,
+          entryMode: 'mobywatel',
           isLoggingIn: false,
           phase: 'ready',
           sessionExpiredNotice:

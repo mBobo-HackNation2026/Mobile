@@ -127,17 +127,12 @@ export function DocumentsScreen() {
   };
 
   return (
-    <Screen>
+    <Screen
+      title="Dokumenty i formularze"
+      subtitle="Co złożyć, gdzie i po co — oraz podgląd danych z PDF z możliwością korekty przed dalszymi krokami."
+    >
       <DemoBanner message="Upload i odczyt PDF są demonstracyjne / z API. To nie jest złożenie wniosku w ZUS." />
-
-      <View style={styles.header}>
-        <Text style={styles.title}>Dokumenty i formularze</Text>
-        <Text style={styles.subtitle}>
-          Co złożyć, gdzie i po co — oraz podgląd danych z PDF z możliwością korekty przed
-          dalszymi krokami.
-        </Text>
-        <Badge label={mode === 'rest' ? 'Analiza: REST' : 'Analiza: Mock'} tone="primary" />
-      </View>
+      <Badge label={mode === 'rest' ? 'Analiza: REST' : 'Analiza: Mock'} tone="primary" />
 
       {eligibilityQuery.data?.documentAssistant ? (
         <DocumentAssistantSection bundle={eligibilityQuery.data.documentAssistant} />
@@ -284,9 +279,6 @@ export function DocumentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.sm },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary, maxWidth: 720 },
   section: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
   body: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   meta: { ...typography.small, color: colors.textMuted, marginBottom: spacing.xs },

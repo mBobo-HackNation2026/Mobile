@@ -15,13 +15,12 @@ export default function DemoScreen() {
   const activeId = useUserJourneyStore((s) => s.profile.demoScenarioId);
 
   return (
-    <Screen>
+    <Screen
+      title="Tryb demo"
+      subtitle="Wczytaj gotowy profil do hubu świadczeń albo uruchom 5 scenariuszy FastAPI."
+    >
       <DemoBanner message="Profile demo ładują mockowy hub. Ocena macierzyńskiego z FastAPI jest na ekranie «Ocena API»." />
-      <View style={styles.header}>
-        <Text style={styles.title}>Tryb demo</Text>
-        <Text style={styles.subtitle}>
-          Wczytaj gotowy profil do hubu świadczeń albo uruchom 5 scenariuszy FastAPI.
-        </Text>
+      <View style={styles.headerActions}>
         {activeId ? <Badge label={`Aktywny: ${activeId}`} tone="primary" /> : null}
         <Button
           label="5 scenariuszy → FastAPI (eligibility/check)"
@@ -58,9 +57,7 @@ export default function DemoScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary, maxWidth: 680 },
+  headerActions: { gap: spacing.sm },
   list: { gap: spacing.md },
   cardTitle: { ...typography.h3, color: colors.text, marginTop: spacing.sm },
   body: { ...typography.body, color: colors.textSecondary, marginVertical: spacing.sm },

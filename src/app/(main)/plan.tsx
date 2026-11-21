@@ -11,12 +11,12 @@ import { ChecklistList, type ChecklistFilter } from '@/features/checklist/Checkl
 import { eligibilityService } from '@/services/api';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, radii, spacing, typography } from '@/theme';
-import type { ChecklistItem } from '@/types/journey';
+import { normalizeChecklistStatus, type ChecklistItem } from '@/types/journey';
 
 const FILTERS: { id: ChecklistFilter; label: string }[] = [
   { id: 'all', label: 'Wszystkie' },
-  { id: 'now', label: 'Teraz' },
-  { id: 'later', label: 'Później' },
+  { id: 'todo', label: 'Do zrobienia' },
+  { id: 'pending', label: 'Oczekujące' },
   { id: 'done', label: 'Wykonane' },
   { id: 'required', label: 'Obowiązkowe' },
   { id: 'optional', label: 'Opcjonalne' },
@@ -73,7 +73,7 @@ export default function PlanScreen() {
 
   const items: ChecklistItem[] = (query.data?.checklist ?? []).map((item) => ({
     ...item,
-    status: overrides[item.id] ?? item.status,
+    status: normalizeChecklistStatus(overrides[item.id] ?? item.status),
   }));
 
   const counts = {
@@ -85,19 +85,15 @@ export default function PlanScreen() {
   };
 
   return (
-    <Screen>
+    <Screen
+      title="Checklista i terminy"
+      subtitle="Każdy krok: co, kiedy, dlaczego, gdzie i jakie dokumenty. Rozróżniamy działania obowiązkowe, opcjonalne i wymagające weryfikacji."
+    >
       <DemoBanner />
-      <View style={styles.header}>
-        <Text style={styles.title}>Checklista i terminy</Text>
-        <Text style={styles.subtitle}>
-          Każdy krok: co, kiedy, dlaczego, gdzie i jakie dokumenty. Rozróżniamy działania
-          obowiązkowe, opcjonalne i wymagające weryfikacji.
-        </Text>
-        <Text style={styles.summary}>
-          Obowiązkowe: {counts.required} · Opcjonalne: {counts.optional} · Do weryfikacji:{' '}
-          {counts.needs_verification}
-        </Text>
-      </View>
+      <Text style={styles.summary}>
+        Obowiązkowe: {counts.required} · Opcjonalne: {counts.optional} · Do weryfikacji:{' '}
+        {counts.needs_verification}
+      </Text>
 
       <View style={styles.filters}>
         {FILTERS.map((item) => (
@@ -121,22 +117,9 @@ export default function PlanScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: spacing.xs,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.text,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    maxWidth: 720,
-  },
   summary: {
     ...typography.small,
     color: colors.textMuted,
-    marginTop: spacing.xs,
   },
   filters: {
     flexDirection: 'row',

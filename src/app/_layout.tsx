@@ -41,13 +41,15 @@ export default function RootLayout() {
           <StatusBar style="dark" />
           <Stack
             screenOptions={{
-              headerStyle: { backgroundColor: colors.surface },
+              headerStyle: { backgroundColor: colors.header },
               headerTintColor: colors.text,
               headerTitleStyle: { fontWeight: '600' },
               contentStyle: { backgroundColor: colors.background },
             }}
           >
             <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="welcome" options={{ headerShown: false }} />
+            <Stack.Screen name="auth/connected" options={{ headerShown: false }} />
             <Stack.Screen
               name="onboarding/index"
               options={{ title: 'Ankieta', headerBackTitle: 'Wróć' }}

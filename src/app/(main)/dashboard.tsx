@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 
-/** Stary adres „Mój plan” → Moje świadczenia. */
+/** Stary dashboard → menu kołowe. */
 export default function DashboardRedirect() {
-  return <Redirect href="/benefits" />;
+  return <Redirect href="/home" />;
 }

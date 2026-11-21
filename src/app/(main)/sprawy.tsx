@@ -15,7 +15,7 @@ import { formatDatePl } from '@/lib/format';
 import { eligibilityService } from '@/services/api';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, spacing, typography } from '@/theme';
-import type { ChecklistItem } from '@/types/journey';
+import { normalizeChecklistStatus, type ChecklistItem } from '@/types/journey';
 
 /**
  * Moje sprawy — radar terminów, niezbędnik, checklista.
@@ -72,18 +72,15 @@ export default function SprawyScreen() {
 
   const items: ChecklistItem[] = query.data.checklist.map((item) => ({
     ...item,
-    status: overrides[item.id] ?? item.status,
+    status: normalizeChecklistStatus(overrides[item.id] ?? item.status),
   }));
 
   return (
-    <Screen>
+    <Screen
+      title="Moje sprawy"
+      subtitle="Terminy z ostrzeżeniami, niezbędnik po zmianie etapu oraz formalności do odhaczenia."
+    >
       <DemoBanner message="Radar, niezbędnik i checklista pochodzą z API/mocka — nie są decyzją ZUS." />
-      <View style={styles.header}>
-        <Text style={styles.title}>Moje sprawy</Text>
-        <Text style={styles.subtitle}>
-          Terminy z ostrzeżeniami, niezbędnik po zmianie etapu oraz formalności do odhaczenia.
-        </Text>
-      </View>
 
       <DeadlineRadarSection items={query.data.deadlineRadar} />
 
@@ -134,9 +131,6 @@ export default function SprawyScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary, maxWidth: 720 },
   section: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
   sectionHeader: {
     flexDirection: 'row',

@@ -66,21 +66,13 @@ export function OtherBenefitsScreen() {
   const { externalBenefits, zusSources } = splitRelatedHints(query.data.relatedBenefits);
 
   return (
-    <Screen>
+    <Screen
+      title="Inne świadczenia"
+      subtitle="Świadczenia poza zasiłkami ZUS (np. 800+, becikowe). eBobo nie ma dla nich silnika uprawnień — sprawdzisz warunki w oficjalnym źródle."
+      backFallbackHref="/benefits"
+    >
       <DemoBanner message="Tu nie oceniamy uprawnień — tylko wskazujemy oficjalne źródła. Ocena A–E dotyczy zasiłków ZUS na ekranie Moje świadczenia." />
-
-      <Link href="/benefits">
-        <Text style={styles.back}>← Moje świadczenia (ZUS)</Text>
-      </Link>
-
-      <View style={styles.header}>
-        <Badge label="Bez silnika oceny" tone="demo" />
-        <Text style={styles.title}>Inne świadczenia</Text>
-        <Text style={styles.subtitle}>
-          Świadczenia poza zasiłkami ZUS (np. 800+, becikowe). eBobo nie ma dla nich silnika
-          uprawnień — sprawdzisz warunki w oficjalnym źródle.
-        </Text>
-      </View>
+      <Badge label="Bez silnika oceny" tone="demo" />
 
       <RelatedBenefitsSection
         items={externalBenefits}
@@ -140,10 +132,6 @@ function splitRelatedHints(items: RelatedBenefitHint[]) {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary, maxWidth: 720 },
-  back: { ...typography.bodyStrong, color: colors.primary, marginBottom: spacing.sm },
   body: { ...typography.body, color: colors.textSecondary },
   meta: { ...typography.small, color: colors.textMuted, marginBottom: spacing.sm },
   link: { ...typography.bodyStrong, color: colors.primary },

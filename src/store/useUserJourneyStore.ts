@@ -3,7 +3,11 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { demoProfiles, emptyProfile } from '@/services/mock/fixtures';
-import type { ChecklistStatus, ParentProfile } from '@/types/journey';
+import {
+  normalizeChecklistStatus,
+  type ChecklistStatus,
+  type ParentProfile,
+} from '@/types/journey';
 
 interface UserJourneyState {
   profile: ParentProfile;
@@ -44,7 +48,7 @@ export const useUserJourneyStore = create<UserJourneyState>()(
         set((state) => ({
           checklistOverrides: {
             ...state.checklistOverrides,
-            [id]: status,
+            [id]: normalizeChecklistStatus(status),
           },
         })),
       resetDemo: () =>

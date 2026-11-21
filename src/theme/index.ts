@@ -1,4 +1,5 @@
 export { colors } from './colors';
+export { palette } from './palette';
 export { layout, radii, spacing } from './spacing';
 export { typography } from './typography';
 

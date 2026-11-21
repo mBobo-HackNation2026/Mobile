@@ -58,11 +58,19 @@ export const benefitDeadlineSchema = z.object({
   isDemo: z.literal(true).or(z.boolean()),
 });
 
+const checklistStatusSchema = z
+  .enum(['todo', 'pending', 'done', 'now', 'later'])
+  .transform((value) => {
+    if (value === 'now') return 'todo' as const;
+    if (value === 'later') return 'pending' as const;
+    return value;
+  });
+
 export const checklistItemSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
-  status: z.enum(['now', 'later', 'done']),
+  status: checklistStatusSchema,
   dueDate: z.string().nullable(),
   documents: z.array(z.string()),
   office: z.string().nullable(),
@@ -171,7 +179,7 @@ export const postpartumKitItemSchema = z.object({
   title: z.string(),
   description: z.string(),
   documents: z.array(z.string()),
-  status: z.enum(['now', 'later', 'done']),
+  status: checklistStatusSchema,
   dueDate: z.string().nullable(),
   ctaLabel: z.string(),
   ctaHref: z.string(),

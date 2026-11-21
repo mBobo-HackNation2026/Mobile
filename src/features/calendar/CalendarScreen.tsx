@@ -100,16 +100,11 @@ export function CalendarScreen() {
   }
 
   return (
-    <Screen>
+    <Screen
+      title="Kalendarz terminów"
+      subtitle="Do kiedy możesz złożyć wnioski, własne notatki i przypomnienia o zbliżającym się końcu okna."
+    >
       <DemoBanner message="Terminy są demonstracyjne — zawsze zweryfikuj je w oficjalnym źródle ZUS." />
-
-      <View style={styles.header}>
-        <Text style={styles.title}>Kalendarz terminów</Text>
-        <Text style={styles.subtitle}>
-          Do kiedy możesz złożyć wnioski, własne notatki i przypomnienia o zbliżającym się
-          końcu okna.
-        </Text>
-      </View>
 
       <View style={styles.monthNav}>
         <Button
@@ -194,9 +189,6 @@ export function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary, maxWidth: 720 },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',

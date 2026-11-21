@@ -64,16 +64,13 @@ export function CalculatorScreen() {
     result?.scenarios.find((s) => s.id === selectedScenarioId) ?? result?.scenarios[0];
 
   return (
-    <Screen>
+    <Screen
+      title="Kalkulator świadczeń"
+      subtitle="Porównaj warianty podziału i pracy w trakcie rodzicielskiego. Kwoty liczy silnik reguł (backend), nie frontend."
+    >
       <DemoBanner message="Symulowana wysokość / okresy z API lub mocka — nie decyzja ZUS i nie gwarancja wypłaty." />
-
-      <View style={styles.header}>
+      <View style={styles.headerMeta}>
         <Badge label={mode === 'rest' ? 'REST' : 'Mock'} tone="primary" />
-        <Text style={styles.title}>Kalkulator świadczeń</Text>
-        <Text style={styles.subtitle}>
-          Porównaj warianty podziału i pracy w trakcie rodzicielskiego. Kwoty liczy silnik
-          reguł (backend), nie frontend.
-        </Text>
         <Text style={styles.meta}>
           {mode === 'rest'
             ? `POST ${baseUrl}/api/v1/calculations/parental`
@@ -245,9 +242,7 @@ function ResultPanel({
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary, maxWidth: 720 },
+  headerMeta: { gap: spacing.xs },
   meta: { ...typography.small, color: colors.textMuted, marginBottom: spacing.xs },
   layout: { gap: spacing.md },
   layoutRow: { flexDirection: 'row', alignItems: 'flex-start' },

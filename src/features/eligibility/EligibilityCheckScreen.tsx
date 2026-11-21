@@ -107,15 +107,12 @@ export function EligibilityCheckScreen() {
   };
 
   return (
-    <Screen>
+    <Screen
+      title="Ocena uprawnienia (API)"
+      subtitle="Silnik obsługuje wiele kodów świadczeń. Powiązane ścieżki otwierasz świadomie — bez automatycznych pętli."
+    >
       <DemoBanner message="Ocena z FastAPI v2 — nie decyzja ZUS. Endpoint: /eligibility/check/{benefit_code}." />
-
-      <View style={styles.header}>
-        <Text style={styles.title}>Ocena uprawnienia (API)</Text>
-        <Text style={styles.subtitle}>
-          Silnik obsługuje wiele kodów świadczeń. Powiązane ścieżki otwierasz świadomie — bez
-          automatycznych pętli.
-        </Text>
+      <View style={styles.headerMeta}>
         <Badge
           label={healthQuery.data?.ok ? 'API dostępne' : 'API / tunel — sprawdź'}
           tone={healthQuery.data?.ok ? 'success' : 'warning'}
@@ -243,9 +240,7 @@ export function EligibilityCheckScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary, maxWidth: 720 },
+  headerMeta: { gap: spacing.xs },
   section: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
   body: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   bodyStrong: { ...typography.bodyStrong, color: colors.text },

@@ -50,17 +50,12 @@ export function BenefitSolutionsScreen() {
   }
 
   return (
-    <Screen>
+    <Screen
+      title="Możliwe rozwiązania"
+      subtitle={benefit.title}
+      backFallbackHref={`/benefits/${benefit.id}`}
+    >
       <DemoBanner message="Pokazujemy tylko działania z fixture/API — bez gwarancji świadczenia i bez obchodzenia prawa." />
-
-      <Link href={`/benefits/${benefit.id}`}>
-        <Text style={styles.link}>← Wróć do szczegółów</Text>
-      </Link>
-
-      <View style={styles.header}>
-        <Text style={styles.title}>Możliwe rozwiązania</Text>
-        <Text style={styles.subtitle}>{benefit.title}</Text>
-      </View>
 
       <Card>
         <Text style={styles.section}>Problem</Text>
@@ -147,9 +142,6 @@ export function BenefitSolutionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary },
   section: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
   body: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   bodyStrong: { ...typography.bodyStrong, color: colors.text, marginBottom: spacing.xs },

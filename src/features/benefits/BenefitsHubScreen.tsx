@@ -77,7 +77,10 @@ export function BenefitsHubScreen() {
   const grouped = groupBenefits(query.data.benefits);
 
   return (
-    <Screen>
+    <Screen
+      title="Moje świadczenia"
+      subtitle="Zasiłki i urlopy ZUS — ocena na podstawie Twoich danych, przeszkody i kolejny krok do wniosku. Świadczenia poza ZUS (bez silnika oceny) są na osobnym ekranie."
+    >
       <DemoBanner
         message={
           mode === 'rest'
@@ -85,14 +88,6 @@ export function BenefitsHubScreen() {
             : 'Ocena jest symulacją mock — nie decyzją ZUS. Ustaw EXPO_PUBLIC_API_MODE=rest, by podłączyć silnik.'
         }
       />
-
-      <View style={styles.header}>
-        <Text style={styles.title}>Moje świadczenia</Text>
-        <Text style={styles.subtitle}>
-          Zasiłki i urlopy ZUS — ocena na podstawie Twoich danych, przeszkody i kolejny krok do
-          wniosku. Świadczenia poza ZUS (bez silnika oceny) są na osobnym ekranie.
-        </Text>
-      </View>
 
       {query.data.missingInputs.length > 0 ? (
         <Card>
@@ -197,9 +192,6 @@ function groupBenefits(benefits: BenefitAssessment[]) {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.xs },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary, maxWidth: 720 },
   group: { gap: spacing.md },
   groupTitle: { ...typography.h2, color: colors.text },
   cardTop: {

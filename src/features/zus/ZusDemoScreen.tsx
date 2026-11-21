@@ -34,18 +34,12 @@ export function ZusDemoScreen() {
   };
 
   return (
-    <Screen>
+    <Screen
+      title="Dane ZUS (symulacja)"
+      subtitle="Pokazujemy, jak wyglądałby podgląd ubezpieczenia, e-ZLA i zadłużenia po połączeniu konta. To atrapa na potrzeby jury — bez prawdziwego uwierzytelnienia."
+    >
       <DemoBanner message="Integracja mObywatel / PUE eZUS jest wyłącznie demonstracyjna. Nie logujemy Cię do urzędu." />
-
-      <View style={styles.header}>
-        <Badge label="Demo · nieoficjalne" tone="demo" />
-        <Text style={styles.title}>Dane ZUS (symulacja)</Text>
-        <Text style={styles.subtitle}>
-          Pokazujemy, jak wyglądałby podgląd ubezpieczenia, e-ZLA i zadłużenia po
-          połączeniu konta. To atrapa na potrzeby jury — bez prawdziwego
-          uwierzytelnienia.
-        </Text>
-      </View>
+      <Badge label="Demo · nieoficjalne" tone="demo" />
 
       <Card>
         <Text style={styles.section}>Symulowane logowanie</Text>
@@ -115,9 +109,6 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.sm },
-  title: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary, maxWidth: 720 },
   section: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
   body: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
   loading: { ...typography.body, color: colors.textSecondary },

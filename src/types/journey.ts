@@ -30,7 +30,15 @@ export type EmploymentEndedReason =
   | 'upadlosc_likwidacja_smierc_pracodawcy'
   | 'naruszenie_prawa_wyrokiem_sadu';
 
-export type ChecklistStatus = 'now' | 'later' | 'done';
+/** Do zrobienia | oczekujące (np. na decyzję) | wykonane. */
+export type ChecklistStatus = 'todo' | 'pending' | 'done';
+
+/** Mapuje też legacy API/store: now → todo, later → pending. */
+export function normalizeChecklistStatus(value: string): ChecklistStatus {
+  if (value === 'done') return 'done';
+  if (value === 'pending' || value === 'later') return 'pending';
+  return 'todo';
+}
 
 export interface ParentProfile {
   stage: ParentStage | null;

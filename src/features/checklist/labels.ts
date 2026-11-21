@@ -1,14 +1,17 @@
 import type { ChecklistPriority, ChecklistStatus } from '@/types/journey';
 
 export const STATUS_LABEL: Record<ChecklistStatus, string> = {
-  now: 'Teraz',
-  later: 'Później',
+  todo: 'Do zrobienia',
+  pending: 'Oczekujące',
   done: 'Wykonane',
 };
 
-export const STATUS_TONE: Record<ChecklistStatus, 'primary' | 'neutral' | 'success'> = {
-  now: 'primary',
-  later: 'neutral',
+export const STATUS_TONE: Record<
+  ChecklistStatus,
+  'primary' | 'warning' | 'success'
+> = {
+  todo: 'primary',
+  pending: 'warning',
   done: 'success',
 };
 
@@ -33,20 +36,41 @@ export const PRIORITY_ORDER: Record<ChecklistPriority, number> = {
   optional: 2,
 };
 
-export function sortChecklistByPriority<
-  T extends { priority?: ChecklistPriority; status: ChecklistStatus },
+/**
+ * Kolejność załatwiania: termin (wcześniejszy wyżej), potem priorytet.
+ * Status „wykonane” nie przenosi pozycji na dół — kolejność procedury zostaje.
+ */
+export function sortChecklistByProcedure<
+  T extends {
+    priority?: ChecklistPriority;
+    dueDate?: string | null;
+  },
 >(items: T[]): T[] {
-  const statusOrder: Record<ChecklistStatus, number> = {
-    now: 0,
-    later: 1,
-    done: 2,
-  };
+  return [...items]
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const da = a.item.dueDate ?? null;
+      const db = b.item.dueDate ?? null;
+      if (da == null && db != null) return -1;
+      if (da != null && db == null) return 1;
+      if (da != null && db != null && da !== db) {
+        return da < db ? -1 : 1;
+      }
+      const pa = PRIORITY_ORDER[a.item.priority ?? 'optional'];
+      const pb = PRIORITY_ORDER[b.item.priority ?? 'optional'];
+      if (pa !== pb) return pa - pb;
+      return a.index - b.index;
+    })
+    .map(({ item }) => item);
+}
 
-  return [...items].sort((a, b) => {
-    const statusDiff = statusOrder[a.status] - statusOrder[b.status];
-    if (statusDiff !== 0) return statusDiff;
-    const pa = PRIORITY_ORDER[a.priority ?? 'optional'];
-    const pb = PRIORITY_ORDER[b.priority ?? 'optional'];
-    return pa - pb;
-  });
+/** @deprecated Użyj sortChecklistByProcedure. */
+export function sortChecklistByPriority<
+  T extends {
+    priority?: ChecklistPriority;
+    status: ChecklistStatus;
+    dueDate?: string | null;
+  },
+>(items: T[]): T[] {
+  return sortChecklistByProcedure(items);
 }
