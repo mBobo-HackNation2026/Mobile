@@ -329,6 +329,7 @@ export const apiErrorSchema = z.object({
     .optional(),
   message: z.string().optional(),
   code: z.string().optional(),
+  error_code: z.string().optional(),
 });
 
 export type EligibilityEvaluationDto = z.infer<typeof eligibilityEvaluationSchema>;

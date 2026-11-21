@@ -10,7 +10,12 @@ import {
   getEligibilityPresentation,
   type EligibilityPresentationMode,
 } from '@/features/eligibility/eligibilityUi';
-import type { EligibilityCheckResult } from '@/services/api/eligibilityCheckSchemas';
+import { planDurationLabel } from '@/features/eligibility/planDuration';
+import {
+  isCautiousEligibilityResult,
+  type EligibilityCheckResult,
+  type MaternityLeaveEligibilityRequest,
+} from '@/services/api/eligibilityCheckSchemas';
 import { colors, spacing, typography } from '@/theme';
 
 interface EligibilityResultViewProps {
@@ -18,6 +23,11 @@ interface EligibilityResultViewProps {
   pregnancyNote?: boolean;
   onRetry?: () => void;
   onFillMissing?: () => void;
+  onCheckRelated?: (benefitCode: string) => void;
+  checkingRelatedCode?: string | null;
+  /** Poprzedni wynik — pozwala wrócić po przejściu do powiązanego świadczenia. */
+  onBackToPrevious?: () => void;
+  requestSnapshot?: MaternityLeaveEligibilityRequest | null;
 }
 
 export function EligibilityResultView({
@@ -25,34 +35,86 @@ export function EligibilityResultView({
   pregnancyNote = false,
   onRetry,
   onFillMissing,
+  onCheckRelated,
+  checkingRelatedCode,
+  onBackToPrevious,
 }: EligibilityResultViewProps) {
   const mode = getEligibilityPresentation(result);
   const tone = badgeTone(mode);
+  const cautious = isCautiousEligibilityResult(result);
+  const relatedSolutions = result.possible_solutions.filter(
+    (s) => s.related_benefit_code?.trim(),
+  );
 
   return (
     <View style={styles.wrap}>
+      {onBackToPrevious ? (
+        <Button label="← Wróć do poprzedniej oceny" variant="ghost" onPress={onBackToPrevious} />
+      ) : null}
+
+      {result.warnings.length > 0 ? (
+        <Card style={styles.warningCard}>
+          <Badge label="Ostrzeżenia z API" tone="warning" />
+          <Text style={styles.section}>Przeczytaj przed decyzją</Text>
+          <Text style={styles.body}>
+            Treści z backendu — nie sterują logiką frontendu i nie oznaczają automatycznie braku
+            prawa do świadczenia.
+          </Text>
+          {result.warnings.map((warning) => (
+            <Text key={warning} style={styles.warning}>
+              • {warning}
+            </Text>
+          ))}
+        </Card>
+      ) : null}
+
+      {cautious ? (
+        <Card style={styles.warningCard}>
+          <Badge label="Ocena uproszczona" tone="warning" />
+          <Text style={styles.headline}>
+            To wstępna możliwość — nie potwierdzone prawo do świadczenia
+          </Text>
+          <Text style={styles.body}>
+            Silnik nie weryfikuje obecnie wszystkich przesłanek (np. art. 30: ustanie
+            ubezpieczenia w ciąży / brak innego zatrudnienia). Sprawdź ostrzeżenia i potwierdź
+            warunki w ZUS.
+          </Text>
+        </Card>
+      ) : null}
+
       <Card>
         <View style={styles.row}>
-          <Badge label={eligibilityBadgeLabel(mode)} tone={tone} />
+          <Badge
+            label={
+              cautious && mode === 'likely_eligible'
+                ? 'Wstępna możliwość — wymaga weryfikacji'
+                : eligibilityBadgeLabel(mode)
+            }
+            tone={cautious ? 'warning' : tone}
+          />
           <Badge label={`Reguły v${result.rules_version}`} tone="neutral" />
           <Badge label={result.data_source} tone="demo" />
         </View>
         <Text style={styles.title}>{result.benefit_name}</Text>
         <Text style={styles.meta}>Kod: {result.benefit_code}</Text>
-        <Text style={styles.headline}>{eligibilityHeadline(mode)}</Text>
+        <Text style={styles.headline}>
+          {cautious
+            ? 'Na podstawie uproszczonej oceny API możesz mieć ścieżkę do sprawdzenia.'
+            : eligibilityHeadline(mode)}
+        </Text>
         {pregnancyNote ? (
           <Text style={styles.warning}>
-            Jesteś na etapie ciąży — ubezpieczenie w dniu porodu nie jest jeszcze
-            historycznie potwierdzonym faktem. Traktuj wynik jako wstępny scenariusz.
+            Jesteś na etapie ciąży — ubezpieczenie w dniu porodu nie jest jeszcze historycznie
+            potwierdzonym faktem. Traktuj wynik jako wstępny scenariusz.
           </Text>
         ) : null}
         <Text style={styles.next}>
           Następny krok:{' '}
           {mode === 'conditional_plan'
             ? 'Uzupełnij brakujące informacje'
-            : mode === 'alternative_path'
-              ? 'Sprawdź możliwe rozwiązania i potwierdź warunki'
-              : mode === 'likely_eligible'
+            : relatedSolutions.length > 0
+              ? 'Sprawdź możliwe inne świadczenie'
+              : mode === 'likely_eligible' && !cautious
                 ? 'Przygotuj dokumenty i zobacz plan'
                 : 'Zweryfikuj dane lub skontaktuj się z ZUS'}
         </Text>
@@ -104,21 +166,57 @@ export function EligibilityResultView({
         </Card>
       ) : null}
 
-      {result.possible_solutions.length > 0 ? (
+      {relatedSolutions.length > 0 ? (
+        <Card>
+          <Badge label="Powiązane świadczenie" tone="primary" />
+          <Text style={styles.section}>Możliwe inne świadczenie</Text>
+          <Text style={styles.body}>
+            Powiązanie z backendu nie gwarantuje uzyskania świadczenia — to osobna ocena.
+          </Text>
+          {relatedSolutions.map((solution, index) => {
+            const code = solution.related_benefit_code!.trim();
+            return (
+              <View key={`${code}-${index}`} style={styles.solution}>
+                <Text style={styles.body}>{solution.description}</Text>
+                {solution.legal_basis ? (
+                  <Text style={styles.meta}>Podstawa: {solution.legal_basis}</Text>
+                ) : null}
+                <Text style={styles.meta}>Kod: {code}</Text>
+                {onCheckRelated ? (
+                  <Button
+                    label={
+                      checkingRelatedCode === code
+                        ? 'Sprawdzam…'
+                        : 'Sprawdź moje uprawnienia'
+                    }
+                    onPress={() => onCheckRelated(code)}
+                    disabled={Boolean(checkingRelatedCode)}
+                  />
+                ) : null}
+              </View>
+            );
+          })}
+        </Card>
+      ) : null}
+
+      {result.possible_solutions.filter((s) => !s.related_benefit_code?.trim()).length >
+      0 ? (
         <Card>
           <Text style={styles.section}>Możliwe ścieżki / rozwiązania</Text>
           <Text style={styles.body}>
             Pochodzą z silnika reguł backendu — nie są gwarancją świadczenia.
           </Text>
-          {result.possible_solutions.map((solution, index) => (
-            <View key={`${solution.type}-${index}`} style={styles.solution}>
-              <Badge label={solution.type} tone="warning" />
-              <Text style={styles.body}>{solution.description}</Text>
-              {solution.legal_basis ? (
-                <Text style={styles.meta}>Podstawa: {solution.legal_basis}</Text>
-              ) : null}
-            </View>
-          ))}
+          {result.possible_solutions
+            .filter((s) => !s.related_benefit_code?.trim())
+            .map((solution, index) => (
+              <View key={`${solution.type}-${index}`} style={styles.solution}>
+                <Badge label={solution.type} tone="warning" />
+                <Text style={styles.body}>{solution.description}</Text>
+                {solution.legal_basis ? (
+                  <Text style={styles.meta}>Podstawa: {solution.legal_basis}</Text>
+                ) : null}
+              </View>
+            ))}
         </Card>
       ) : null}
 
@@ -134,27 +232,16 @@ export function EligibilityResultView({
               <Badge label="Na podstawie danych" tone="success" />
             )}
           </View>
-          {mode === 'conditional_plan' ? (
-            <Text style={styles.warning}>
-              To potencjalny scenariusz (np. {result.plan.weeks} tygodni,{' '}
-              {result.plan.rate_percentage}% podstawy) — nie potwierdzone uprawnienie i nie
-              kwota w PLN.
-            </Text>
-          ) : (
-            <Text style={styles.body}>
-              Okres: {result.plan.weeks} tygodni · Stawka: {result.plan.rate_percentage}%
-              podstawy wymiaru (nie jest to kwota wypłaty w złotych).
-            </Text>
-          )}
+          <Text style={mode === 'conditional_plan' || cautious ? styles.warning : styles.body}>
+            Okres: {planDurationLabel(result.plan)} · Stawka: {result.plan.rate_percentage}%
+            podstawy wymiaru (nie jest to kwota wypłaty w złotych)
+            {cautious ? ' — wstępny scenariusz, wymaga potwierdzenia.' : '.'}
+          </Text>
           <Text style={styles.meta}>Instytucja (tekst z API): {result.plan.institution}</Text>
 
           {result.plan.required_documents.length > 0 ? (
             <>
-              <Text style={styles.subSection}>
-                {mode === 'conditional_plan'
-                  ? 'Dokumenty w wariancie warunkowym (nie checklista obowiązków)'
-                  : 'Wymagane dokumenty (z API)'}
-              </Text>
+              <Text style={styles.subSection}>Wymagane dokumenty (z API)</Text>
               {result.plan.required_documents.map((doc) => (
                 <View key={doc.code} style={styles.doc}>
                   <Text style={styles.bodyStrong}>{doc.name}</Text>
@@ -192,26 +279,10 @@ export function EligibilityResultView({
         <Card>
           <Text style={styles.section}>Plan działania</Text>
           <Text style={styles.body}>
-            Backend nie zwrócił standardowego planu urlopu macierzyńskiego dla tej oceny
-            (`plan: null`).
+            Backend nie zwrócił standardowego planu dla tej oceny (`plan: null`).
           </Text>
         </Card>
       )}
-
-      {result.warnings.length > 0 ? (
-        <Card>
-          <Text style={styles.section}>Ostrzeżenia</Text>
-          <Text style={styles.body}>
-            Treści informacyjne z API — nie sterują logiką i nie oznaczają automatycznie braku
-            prawa do świadczenia.
-          </Text>
-          {result.warnings.map((warning) => (
-            <Text key={warning} style={styles.warning}>
-              • {warning}
-            </Text>
-          ))}
-        </Card>
-      ) : null}
 
       <Card>
         <Text style={styles.meta}>
@@ -219,7 +290,7 @@ export function EligibilityResultView({
           decyzja ZUS.
         </Text>
         <Button
-          label="Moje świadczenia (hub / mocki)"
+          label="Moje świadczenia (hub)"
           variant="secondary"
           onPress={() => router.push('/benefits')}
         />
@@ -247,6 +318,10 @@ function badgeTone(
 
 const styles = StyleSheet.create({
   wrap: { gap: spacing.md },
+  warningCard: {
+    borderColor: colors.warning,
+    backgroundColor: colors.warningSoft,
+  },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
   title: { ...typography.h2, color: colors.text },
   headline: { ...typography.bodyStrong, color: colors.text, marginVertical: spacing.sm },

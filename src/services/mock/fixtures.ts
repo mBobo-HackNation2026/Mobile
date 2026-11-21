@@ -167,23 +167,28 @@ export const API_ELIGIBILITY_DEMO_SCENARIOS: Array<{
   title: string;
   description: string;
   request: MaternityLeaveEligibilityRequest;
+  benefitCode?: string;
 }> = [
   {
     id: 'api-one-child',
     title: '1. Jedno dziecko',
-    description: 'Ubezpieczona w dniu porodu — oczekiwane likely_eligible, 20 tygodni.',
+    description: 'Ubezpieczona w dniu porodu — likely_eligible, 20 tygodni.',
+    benefitCode: 'zasilek_macierzynski_urlop_macierzynski',
     request: { children_count: 1, insured_at_birth: true },
   },
   {
     id: 'api-twins',
     title: '2. Bliźniaki',
-    description: 'Dwoje dzieci — oczekiwane 31 tygodni.',
+    description: 'Dwoje dzieci — 31 tygodni.',
+    benefitCode: 'zasilek_macierzynski_urlop_macierzynski',
     request: { children_count: 2, insured_at_birth: true },
   },
   {
     id: 'api-ended-insurance',
     title: '3. Ustanie ubezpieczenia w ciąży',
-    description: 'Brak ubezpieczenia + upadłość pracodawcy — requires_verification, plan null.',
+    description:
+      'requires_verification + related_benefit_code art. 30 — potem osobna ocena.',
+    benefitCode: 'zasilek_macierzynski_urlop_macierzynski',
     request: {
       children_count: 1,
       insured_at_birth: false,
@@ -193,7 +198,8 @@ export const API_ELIGIBILITY_DEMO_SCENARIOS: Array<{
   {
     id: 'api-self-employed',
     title: '4. Działalność gospodarcza',
-    description: 'Bez sfabrykowanego Z-3a; warnings z API.',
+    description: 'Warnings z API (m.in. formularze).',
+    benefitCode: 'zasilek_macierzynski_urlop_macierzynski',
     request: {
       children_count: 1,
       insured_at_birth: true,
@@ -205,7 +211,19 @@ export const API_ELIGIBILITY_DEMO_SCENARIOS: Array<{
     id: 'api-missing-insurance',
     title: '5. Brak statusu ubezpieczenia',
     description: 'Tylko children_count — missing_data + plan warunkowy.',
+    benefitCode: 'zasilek_macierzynski_urlop_macierzynski',
     request: { children_count: 1 },
+  },
+  {
+    id: 'api-art30',
+    title: '6. Art. 30 (bezpośrednio)',
+    description: 'weeks: null + duration_description + warnings (ostrożna prezentacja).',
+    benefitCode: 'zasilek_w_wysokosci_zasilku_macierzynskiego',
+    request: {
+      children_count: 1,
+      insured_at_birth: false,
+      employment_ended_reason: 'upadlosc_likwidacja_smierc_pracodawcy',
+    },
   },
 ];
 

@@ -35,8 +35,12 @@ export function isNgrokUrl(url = getApiBaseUrl()): boolean {
 
 export const API_PATHS = {
   health: '/api/v1/health',
-  /** Silnik uprawnień FastAPI v2 — zasiłek macierzyński (urlop macierzyński). */
-  eligibilityCheck: '/api/v1/eligibility/check',
+  authSession: '/api/v1/auth/session',
+  authMobywatelLogin: '/api/v1/auth/mobywatel/login',
+  authMe: '/api/v1/auth/me',
+  /** Silnik uprawnień FastAPI v2 — `POST /eligibility/check/{benefit_code}`. */
+  eligibilityCheck: (benefitCode: string) =>
+    `/api/v1/eligibility/check/${encodeURIComponent(benefitCode)}`,
   /** Starszy / rozszerzony kontrakt hubu świadczeń (mock lub przyszły BE). */
   eligibilityEvaluate: '/api/v1/eligibility/evaluate',
   calculationsParental: '/api/v1/calculations/parental',

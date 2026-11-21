@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import { Screen } from '@/components/ui/Screen';
+import { SessionCard } from '@/features/auth/SessionCard';
 import { formatDatePl } from '@/lib/format';
 import { useCalendarStore } from '@/store/useCalendarStore';
 import { useDocumentAssistantStore } from '@/store/useDocumentAssistantStore';
@@ -19,6 +21,7 @@ import {
 } from '@/types/journey';
 
 export default function ProfileScreen() {
+  const queryClient = useQueryClient();
   const profile = useUserJourneyStore((s) => s.profile);
   const resetDemo = useUserJourneyStore((s) => s.resetDemo);
   const clearCalendarData = useCalendarStore((s) => s.clearCalendarData);
@@ -27,13 +30,15 @@ export default function ProfileScreen() {
 
   return (
     <Screen>
-      <DemoBanner />
+      <DemoBanner message="Profil ankiety jest lokalny. Sesja mObywatel poniżej to wyłącznie DEMO API." />
       <View style={styles.header}>
         <Text style={styles.title}>Profil i scenariusz</Text>
         <Text style={styles.subtitle}>
           Edytuj ankietę albo zrestartuj demo. Zmiany od razu wpływają na plan i kalkulator.
         </Text>
       </View>
+
+      <SessionCard />
 
       <Card>
         {profile.onboardingCompleted ? (
@@ -90,6 +95,7 @@ export default function ProfileScreen() {
             clearCalendarData();
             clearDocuments();
             clearDocAssistant();
+            void queryClient.clear();
             router.replace('/');
           }}
         />

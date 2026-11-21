@@ -1,5 +1,9 @@
 import { getApiBaseUrl, isNgrokUrl } from '@/services/api/config';
-import { apiErrorSchema } from '@/services/api/schemas';
+import {
+  getAccessTokenBridge,
+  notifyUnauthorized,
+} from '@/services/api/authTokenBridge';
+import { apiClientErrorFromResponse } from '@/services/api/normalizeApiError';
 
 export class ApiClientError extends Error {
   readonly status: number;
@@ -20,31 +24,9 @@ type RequestOptions = {
   body?: unknown;
   formData?: FormData;
   signal?: AbortSignal;
+  /** Domyślnie true — dołącz Bearer, gdy token jest w bridge. */
+  auth?: boolean;
 };
-
-async function parseError(response: Response): Promise<ApiClientError> {
-  let body: unknown;
-  try {
-    body = await response.json();
-  } catch {
-    body = undefined;
-  }
-
-  const parsed = apiErrorSchema.safeParse(body);
-  let message = `Błąd API (${response.status})`;
-
-  if (parsed.success) {
-    if (typeof parsed.data.detail === 'string') {
-      message = parsed.data.detail;
-    } else if (Array.isArray(parsed.data.detail) && parsed.data.detail[0]?.msg) {
-      message = parsed.data.detail[0].msg;
-    } else if (parsed.data.message) {
-      message = parsed.data.message;
-    }
-  }
-
-  return new ApiClientError(message, response.status, body, parsed.success ? parsed.data.code : undefined);
-}
 
 export async function apiRequest<T>(
   path: string,
@@ -52,6 +34,7 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${path}`;
+  const useAuth = options.auth !== false;
 
   const headers: Record<string, string> = {
     Accept: 'application/json',
@@ -59,6 +42,13 @@ export async function apiRequest<T>(
 
   if (isNgrokUrl(baseUrl)) {
     headers['ngrok-skip-browser-warning'] = 'true';
+  }
+
+  if (useAuth) {
+    const token = getAccessTokenBridge();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
   }
 
   let body: BodyInit | undefined;
@@ -79,13 +69,23 @@ export async function apiRequest<T>(
     });
   } catch {
     throw new ApiClientError(
-      'Brak połączenia z serwerem. Sprawdź EXPO_PUBLIC_API_URL / EXPO_PUBLIC_API_BASE_URL albo użyj scenariuszy demo z fixture, gdy tunel jest niedostępny.',
+      'Brak połączenia z serwerem. Sprawdź EXPO_PUBLIC_API_URL albo użyj scenariuszy demo, gdy tunel jest niedostępny.',
       0,
     );
   }
 
   if (!response.ok) {
-    throw await parseError(response);
+    let parsedBody: unknown;
+    try {
+      parsedBody = await response.json();
+    } catch {
+      parsedBody = undefined;
+    }
+    const error = apiClientErrorFromResponse(response.status, parsedBody);
+    if (response.status === 401 && useAuth) {
+      notifyUnauthorized();
+    }
+    throw error;
   }
 
   if (response.status === 204) {

@@ -78,7 +78,13 @@ export function BenefitsHubScreen() {
 
   return (
     <Screen>
-      <DemoBanner message="Ocena jest symulacją / wynikiem API — nie decyzją ZUS. Zawsze pokazujemy następny krok, gdy istnieje." />
+      <DemoBanner
+        message={
+          mode === 'rest'
+            ? 'Macierzyński: FastAPI. Reszta hubu: mock. To nie jest decyzja ZUS.'
+            : 'Ocena jest symulacją mock — nie decyzją ZUS. Ustaw EXPO_PUBLIC_API_MODE=rest, by podłączyć silnik.'
+        }
+      />
 
       <View style={styles.header}>
         <Text style={styles.title}>Moje świadczenia</Text>
@@ -125,13 +131,18 @@ export function BenefitsHubScreen() {
       </Card>
 
       <Card>
-        <Badge label="FastAPI" tone="primary" />
-        <Text style={styles.cardTitle}>Ocena zasiłku macierzyńskiego (silnik BE)</Text>
+        <Badge label={mode === 'rest' ? 'FastAPI w hubie' : 'Mock'} tone="primary" />
+        <Text style={styles.cardTitle}>Silnik macierzyński</Text>
         <Text style={styles.body}>
-          Rzeczywisty endpoint `/api/v1/eligibility/check` — jedno świadczenie, bez lokalnej
-          logiki prawnej.
+          {mode === 'rest'
+            ? 'Karta macierzyńskiego pochodzi z `/api/v1/eligibility/check/{benefit_code}` (gdy BE odpowiada). Tu: scenariusze i powiązane świadczenia.'
+            : 'Włącz EXPO_PUBLIC_API_MODE=rest, żeby karta macierzyńskiego brała wynik z FastAPI.'}
         </Text>
-        <Button label="Uruchom ocenę API" onPress={() => router.push('/eligibility')} />
+        <Button
+          label="Scenariusze API (macierzyński)"
+          variant="secondary"
+          onPress={() => router.push('/eligibility')}
+        />
       </Card>
 
       <Card>

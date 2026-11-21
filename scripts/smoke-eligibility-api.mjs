@@ -1,6 +1,6 @@
 /**
- * Smoke test: GET /api/v1/health + 5× POST /api/v1/eligibility/check
- * Uruchom: node --env-file=.env scripts/smoke-eligibility-api.mjs
+ * Smoke: health + auth + eligibility v2 (oba benefit_code) + related.
+ * node scripts/smoke-eligibility-api.mjs
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -11,7 +11,6 @@ function loadEnvFile() {
     for (const line of raw.split(/\r?\n/)) {
       const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
       if (!m) continue;
-      const key = m[1];
       let val = m[2];
       if (
         (val.startsWith('"') && val.endsWith('"')) ||
@@ -19,7 +18,7 @@ function loadEnvFile() {
       ) {
         val = val.slice(1, -1);
       }
-      if (!process.env[key]) process.env[key] = val;
+      if (!process.env[m[1]]) process.env[m[1]] = val;
     }
   } catch {
     // ignore
@@ -40,109 +39,13 @@ const headers = {
   ...( /ngrok/i.test(BASE) ? { 'ngrok-skip-browser-warning': 'true' } : {}),
 };
 
-const scenarios = [
-  {
-    id: 'api-one-child',
-    title: '1. Jedno dziecko',
-    expect: { status: 'likely_eligible', weeks: 20, planNull: false },
-    body: { children_count: 1, insured_at_birth: true },
-  },
-  {
-    id: 'api-twins',
-    title: '2. Bliźniaki',
-    expect: { status: 'likely_eligible', weeks: 31, planNull: false },
-    body: { children_count: 2, insured_at_birth: true },
-  },
-  {
-    id: 'api-ended-insurance',
-    title: '3. Ustanie ubezpieczenia w ciąży',
-    expect: {
-      status: 'requires_verification',
-      planNull: true,
-      minSolutions: 1,
-    },
-    body: {
-      children_count: 1,
-      insured_at_birth: false,
-      employment_ended_reason: 'upadlosc_likwidacja_smierc_pracodawcy',
-    },
-  },
-  {
-    id: 'api-self-employed',
-    title: '4. Działalność gospodarcza',
-    expect: { status: 'likely_eligible', planNull: false },
-    body: {
-      children_count: 1,
-      insured_at_birth: true,
-      insurance_title: 'dzialalnosc_gospodarcza',
-      debt_amount_zl: 0,
-    },
-  },
-  {
-    id: 'api-missing-insurance',
-    title: '5. Brak statusu ubezpieczenia',
-    expect: {
-      status: 'requires_verification',
-      minMissing: 1,
-      // plan może być warunkowy (nie null) albo null — nie wymuszamy
-    },
-    body: { children_count: 1 },
-  },
-];
-
-function assertShape(result) {
-  const required = [
-    'benefit_code',
-    'benefit_name',
-    'status',
-    'met_conditions',
-    'unmet_conditions',
-    'missing_data',
-    'possible_solutions',
-    'plan',
-    'rules_version',
-    'warnings',
-  ];
-  const missing = required.filter((k) => !(k in result));
-  return missing;
-}
-
-function checkExpect(result, expect) {
-  const fails = [];
-  if (expect.status && result.status !== expect.status) {
-    fails.push(`status: got ${result.status}, want ${expect.status}`);
-  }
-  if (expect.planNull === true && result.plan != null) {
-    fails.push('plan: expected null');
-  }
-  if (expect.planNull === false && result.plan == null) {
-    fails.push('plan: expected object, got null');
-  }
-  if (expect.weeks != null) {
-    const weeks = result.plan?.weeks;
-    if (weeks !== expect.weeks) {
-      fails.push(`plan.weeks: got ${weeks}, want ${expect.weeks}`);
-    }
-  }
-  if (expect.minSolutions != null) {
-    const n = result.possible_solutions?.length ?? 0;
-    if (n < expect.minSolutions) {
-      fails.push(`possible_solutions: got ${n}, want ≥ ${expect.minSolutions}`);
-    }
-  }
-  if (expect.minMissing != null) {
-    const n = result.missing_data?.length ?? 0;
-    if (n < expect.minMissing) {
-      fails.push(`missing_data: got ${n}, want ≥ ${expect.minMissing}`);
-    }
-  }
-  return fails;
-}
-
-async function req(method, path, body) {
+async function req(method, path, body, token) {
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers,
+    headers: {
+      ...headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
@@ -150,61 +53,118 @@ async function req(method, path, body) {
   try {
     json = text ? JSON.parse(text) : null;
   } catch {
-    json = { _raw: text.slice(0, 500) };
+    json = { _raw: text.slice(0, 400) };
   }
   return { ok: res.ok, status: res.status, json };
 }
 
-function summarize(result) {
-  return {
-    status: result.status,
-    benefit: result.benefit_name ?? result.benefit_code,
-    met: result.met_conditions?.length ?? 0,
-    unmet: result.unmet_conditions?.length ?? 0,
-    missing: result.missing_data,
-    solutions: (result.possible_solutions ?? []).map((s) => s.type),
-    plan: result.plan
-      ? {
-          weeks: result.plan.weeks,
-          rate: result.plan.rate_percentage,
-          institution: result.plan.institution,
-          docs: (result.plan.required_documents ?? []).map((d) => d.code),
-        }
-      : null,
-    warnings: result.warnings,
-    rules_version: result.rules_version,
-  };
+let failed = 0;
+function pass(name, ok, detail) {
+  if (!ok) failed += 1;
+  console.log(ok ? `PASS ${name}` : `FAIL ${name}`, detail ?? '');
 }
 
 console.log(`BASE ${BASE}\n`);
 
 const health = await req('GET', '/api/v1/health');
-console.log('=== HEALTH ===');
-console.log(JSON.stringify({ http: health.status, body: health.json }, null, 2));
-if (!health.ok || health.json?.status !== 'ok') {
-  console.error('\nHealth FAILED — przerywam scenariusze.');
+pass('health', health.ok && health.json?.status === 'ok', JSON.stringify(health.json));
+
+if (!health.ok) {
   process.exit(1);
 }
 
-let failed = 0;
-for (const scenario of scenarios) {
-  console.log(`\n=== ${scenario.title} (${scenario.id}) ===`);
-  console.log('REQUEST', JSON.stringify(scenario.body));
-  const res = await req('POST', '/api/v1/eligibility/check', scenario.body);
-  if (!res.ok) {
-    failed += 1;
-    console.log('HTTP', res.status, JSON.stringify(res.json, null, 2));
-    continue;
-  }
-  const shapeMiss = assertShape(res.json);
-  const expectFails = checkExpect(res.json, scenario.expect);
-  const ok = shapeMiss.length === 0 && expectFails.length === 0;
-  if (!ok) failed += 1;
-  console.log(ok ? 'PASS' : 'FAIL');
-  if (shapeMiss.length) console.log('  missing fields:', shapeMiss.join(', '));
-  if (expectFails.length) expectFails.forEach((f) => console.log('  ', f));
-  console.log('SUMMARY', JSON.stringify(summarize(res.json), null, 2));
-}
+const session = await req('POST', '/api/v1/auth/session');
+pass(
+  'auth/session',
+  session.ok && session.json?.status === 'anonymous' && session.json?.access_token,
+);
+const token = session.json?.access_token;
+const userId = session.json?.user_id;
 
-console.log(`\n=== DONE: ${scenarios.length - failed}/${scenarios.length} passed ===`);
+const me1 = await req('GET', '/api/v1/auth/me', null, token);
+pass('auth/me anonymous', me1.ok && me1.json?.status === 'anonymous');
+
+const mat = await req(
+  'POST',
+  '/api/v1/eligibility/check/zasilek_macierzynski_urlop_macierzynski',
+  { children_count: 1, insured_at_birth: true },
+);
+pass(
+  'eligibility maternity',
+  mat.ok && mat.json?.status === 'likely_eligible' && mat.json?.plan?.weeks === 20,
+  `weeks=${mat.json?.plan?.weeks}`,
+);
+
+const ended = await req(
+  'POST',
+  '/api/v1/eligibility/check/zasilek_macierzynski_urlop_macierzynski',
+  {
+    children_count: 1,
+    insured_at_birth: false,
+    employment_ended_reason: 'upadlosc_likwidacja_smierc_pracodawcy',
+  },
+);
+const related = ended.json?.possible_solutions?.find((s) => s.related_benefit_code)
+  ?.related_benefit_code;
+pass(
+  'related_benefit_code',
+  ended.ok && related === 'zasilek_w_wysokosci_zasilku_macierzynskiego',
+  related,
+);
+
+const art30 = await req(
+  'POST',
+  '/api/v1/eligibility/check/zasilek_w_wysokosci_zasilku_macierzynskiego',
+  {
+    children_count: 1,
+    insured_at_birth: false,
+    employment_ended_reason: 'upadlosc_likwidacja_smierc_pracodawcy',
+  },
+);
+pass(
+  'art30 duration_description',
+  art30.ok &&
+    art30.json?.plan?.weeks == null &&
+    Boolean(art30.json?.plan?.duration_description) &&
+    (art30.json?.warnings?.length ?? 0) > 0,
+  `dur=${art30.json?.plan?.duration_description}`,
+);
+
+const notFound = await req(
+  'POST',
+  '/api/v1/eligibility/check/nieistniejace_swiadczenie_xyz',
+  { children_count: 1, insured_at_birth: true },
+);
+pass('404 unknown benefit', notFound.status === 404, `http=${notFound.status}`);
+
+const invalid = await req(
+  'POST',
+  '/api/v1/eligibility/check/zasilek_macierzynski_urlop_macierzynski',
+  { children_count: 0, insured_at_birth: true },
+);
+pass('422 children_count', invalid.status === 422, `http=${invalid.status}`);
+
+const login = await req('POST', '/api/v1/auth/mobywatel/login', {}, token);
+pass(
+  'mobywatel login',
+  login.ok &&
+    login.json?.status === 'authenticated' &&
+    login.json?.user_id === userId,
+  `sameUser=${login.json?.user_id === userId}`,
+);
+
+const me2 = await req('GET', '/api/v1/auth/me', null, login.json?.access_token);
+pass(
+  'auth/me authenticated',
+  me2.ok && me2.json?.status === 'authenticated' && me2.json?.first_name,
+  me2.json?.first_name,
+);
+
+const oldPath = await req('POST', '/api/v1/eligibility/check', {
+  children_count: 1,
+  insured_at_birth: true,
+});
+pass('old /eligibility/check gone', oldPath.status === 404 || oldPath.status === 405, `http=${oldPath.status}`);
+
+console.log(`\n=== DONE: failures=${failed} ===`);
 process.exit(failed ? 1 : 0);

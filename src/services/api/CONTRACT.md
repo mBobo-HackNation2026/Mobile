@@ -1,4 +1,4 @@
-# Kontrakt API eBobo (frontend ↔ FastAPI)
+# Kontrakt API eBobo (frontend ↔ FastAPI) — Integration Brief v3
 
 ## ENV
 
@@ -13,24 +13,37 @@ EXPO_PUBLIC_API_MODE=rest|mock
 | Metoda | Ścieżka | Status FE |
 |--------|---------|-----------|
 | GET | `/api/v1/health` | używane |
-| POST | `/api/v1/eligibility/check` | **zintegrowane** — zasiłek macierzyński (urlop macierzyński) |
-| POST | `/api/v1/eligibility/evaluate` | hub UX — nadal **mock** (BE nie udostępnia pełnego katalogu) |
-| POST | `/api/v1/calculations/parental` | mock / przyszły REST |
-| POST | `/api/v1/documents/analyze` | mock / przyszły REST |
-| GET | `/api/v1/knowledge` | mock / przyszły REST |
+| POST | `/api/v1/auth/session` | **live** — anonimowa sesja (bootstrap) |
+| POST | `/api/v1/auth/mobywatel/login` | **live** — DEMO mObywatel |
+| GET | `/api/v1/auth/me` | **live** — profil sesji |
+| POST | `/api/v1/eligibility/check/{benefit_code}` | **live** — silnik v2 |
+| ~~POST `/api/v1/eligibility/check`~~ | **usunięte** — nie używać |
+| POST | `/api/v1/eligibility/evaluate` | hub katalog — mock |
+| POST | `/api/v1/calculations/parental` | REST + fallback mock |
+| POST | `/api/v1/documents/analyze` | REST + fallback mock |
+| GET | `/api/v1/knowledge` | REST + fallback mock |
 
-## POST `/api/v1/eligibility/check`
+### Benefit codes (obecnie)
 
-Request (`MaternityLeaveEligibilityRequest`):
+- `zasilek_macierzynski_urlop_macierzynski`
+- `zasilek_w_wysokosci_zasilku_macierzynskiego`
 
-- `children_count` (wymagane)
-- `insured_at_birth`: `true` \| `false` \| `null` / pominięte (`null` ≠ „nie”)
-- `insurance_title`: `umowa_o_prace` \| `zlecenie` \| `dzialalnosc_gospodarcza` \| `inny`
-- `debt_amount_zl` (opcjonalnie, działalność)
-- `employment_ended_reason` (gdy `insured_at_birth=false`)
+### Auth
 
-Response (`EligibilityResult`): `status`, warunki, `missing_data`, `possible_solutions`, `plan` (nullable), `warnings`, `rules_version`.
+- Sesja nie jest wymagana do `/eligibility/check/{code}` ani ankiety.
+- Awaria `/auth/session` nie blokuje UI.
+- Token: SecureStore (native) / sessionStorage (web).
+- 401 → wyczyść token, zachowaj lokalną ankietę, zaproponuj nową sesję.
 
-**Status i plan są niezależne** — FE pokazuje plan warunkowy przy `requires_verification` + `plan` + `missing_data`.
+### Eligibility v2
 
-Nie parsować `warnings` / `deadlines` jako logiki sterującej.
+- `plan.weeks` może być `null` — wtedy `duration_description` lub „Okres wymaga ustalenia”.
+- `possible_solutions[].related_benefit_code` → CTA „Sprawdź moje uprawnienia” (świadomy drugi request).
+- Art. 30 / warnings: ostrożna prezentacja, bez „masz potwierdzone prawo”.
+
+### Tryb `rest` (hybryda hubu)
+
+1. Mock `evaluate` (rodzicielski, radar, sprawy…).
+2. Live `POST /eligibility/check/zasilek_macierzynski_urlop_macierzynski`.
+3. Wynik API zastępuje kartę `maternity`.
+4. 502/błąd → pełny mock + warning.

@@ -1,7 +1,9 @@
 import { API_PATHS, getApiBaseUrl } from '@/services/api/config';
 import { ApiClientError, apiRequest } from '@/services/api/httpClient';
 import {
+  DEFAULT_MATERNITY_BENEFIT_CODE,
   eligibilityResultSchema,
+  type BenefitCode,
   type EligibilityCheckResult,
   type MaternityLeaveEligibilityRequest,
 } from '@/services/api/eligibilityCheckSchemas';
@@ -9,8 +11,17 @@ import { parseApiResponse } from '@/services/api/parse';
 import type { EmploymentType, ParentProfile } from '@/types/journey';
 
 export type {
+  BenefitCode,
   EligibilityCheckResult,
   MaternityLeaveEligibilityRequest,
+} from '@/services/api/eligibilityCheckSchemas';
+
+export {
+  BENEFIT_CODES,
+  BENEFIT_CODE_LABEL,
+  DEFAULT_MATERNITY_BENEFIT_CODE,
+  formatPlanDuration,
+  isCautiousEligibilityResult,
 } from '@/services/api/eligibilityCheckSchemas';
 
 /** Mapowanie tytułu ubezpieczenia z ankiety → kontrakt BE. */
@@ -50,7 +61,6 @@ export function profileToEligibilityCheckRequest(
   } else if (profile.insuranceStatus === 'not_insured') {
     insured_at_birth = false;
   } else {
-    // unknown / null — nie wysyłamy false
     insured_at_birth = null;
   }
 
@@ -65,17 +75,11 @@ export function profileToEligibilityCheckRequest(
     body.insurance_title = insurance_title;
   }
 
-  if (
-    insurance_title === 'dzialalnosc_gospodarcza' &&
-    profile.debtAmountZl != null
-  ) {
+  if (insurance_title === 'dzialalnosc_gospodarcza' && profile.debtAmountZl != null) {
     body.debt_amount_zl = profile.debtAmountZl;
   }
 
-  if (
-    insured_at_birth === false &&
-    profile.employmentEndedReason
-  ) {
+  if (insured_at_birth === false && profile.employmentEndedReason) {
     body.employment_ended_reason = profile.employmentEndedReason;
   }
 
@@ -106,24 +110,48 @@ export function serializeEligibilityCheckRequest(
   return out;
 }
 
-export async function checkMaternityEligibility(
+/** POST `/api/v1/eligibility/check/{benefit_code}` — wspólny serwis dla wszystkich świadczeń. */
+export async function checkBenefitEligibility(
+  benefitCode: BenefitCode,
   input: MaternityLeaveEligibilityRequest,
   signal?: AbortSignal,
 ): Promise<EligibilityCheckResult> {
   const payload = serializeEligibilityCheckRequest(input);
-  const raw = await apiRequest<unknown>(API_PATHS.eligibilityCheck, {
-    method: 'POST',
-    body: payload,
-    signal,
-  });
-  return parseApiResponse(eligibilityResultSchema, raw, 'eligibility/check');
+  const path = API_PATHS.eligibilityCheck(benefitCode);
+  try {
+    const raw = await apiRequest<unknown>(path, {
+      method: 'POST',
+      body: payload,
+      auth: false,
+      signal,
+    });
+    return parseApiResponse(eligibilityResultSchema, raw, `eligibility/check/${benefitCode}`);
+  } catch (error) {
+    if (error instanceof ApiClientError && error.status === 404) {
+      throw new ApiClientError(
+        'Ta ścieżka świadczenia nie jest obecnie obsługiwana przez silnik uprawnień.',
+        404,
+        error.body,
+        error.code ?? 'not_found',
+      );
+    }
+    throw error;
+  }
+}
+
+/** @deprecated używaj checkBenefitEligibility z kodem świadczenia */
+export async function checkMaternityEligibility(
+  input: MaternityLeaveEligibilityRequest,
+  signal?: AbortSignal,
+): Promise<EligibilityCheckResult> {
+  return checkBenefitEligibility(DEFAULT_MATERNITY_BENEFIT_CODE, input, signal);
 }
 
 export async function checkApiHealth(): Promise<{ ok: boolean; detail: string }> {
   try {
     const raw = await apiRequest<{ status?: string; app_name?: string }>(
       API_PATHS.health,
-      { method: 'GET' },
+      { method: 'GET', auth: false },
     );
     const ok = raw?.status === 'ok';
     return {
