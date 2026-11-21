@@ -7,6 +7,7 @@ import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ChoiceChip } from '@/components/ui/ChoiceChip';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import { Screen } from '@/components/ui/Screen';
 import { Stepper } from '@/components/ui/Stepper';
@@ -216,19 +217,20 @@ export function OnboardingWizard() {
                   : 'Przewidywana data porodu'}
             </Text>
             <Text style={styles.blockHint}>
-              Format RRRR-MM-DD. Możesz pominąć, jeśli jeszcze nie wiesz.
+              Dotknij pola, żeby otworzyć kalendarz. Możesz też pominąć, jeśli jeszcze nie
+              wiesz.
             </Text>
             <Controller
               control={form.control}
               name="eventDate"
               render={({ field, fieldState }) => (
-                <TextField
+                <DatePickerField
                   label="Data"
                   value={field.value}
-                  onChangeText={field.onChange}
-                  placeholder="2026-06-15"
+                  onChange={field.onChange}
+                  placeholder="Wybierz datę w kalendarzu"
                   error={fieldState.error?.message}
-                  autoCapitalize="none"
+                  hint="Data zapisze się automatycznie po wyborze dnia."
                 />
               )}
             />

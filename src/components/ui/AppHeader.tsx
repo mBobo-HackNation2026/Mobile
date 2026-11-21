@@ -18,28 +18,33 @@ interface AppHeaderProps {
   trailing?: ReactNode;
   /**
    * Domyślnie true: kolor headera wchodzi pod notch / status bar
-   * (wzorzec edge-to-edge chrome).
+   * (edge-to-edge chrome — M3 / Android / iOS).
    */
   includeTopInset?: boolean;
+  /** 0–1: postęp przewijania treści (pasek pod tytułem). */
+  scrollProgress?: number;
 }
 
 /**
- * Sticky nagłówek — jedna powierzchnia z obszarem status bar / notch.
+ * Sticky nagłówek: notch + tytuł + pasek progresu scrolla.
  */
 export function AppHeader({
   title,
-  subtitle,
+  // subtitle — opisy w tytule tymczasowo wyłączone
+  // subtitle,
   showBack = false,
   backLabel,
   backFallbackHref,
   brandFallback = 'eBobo',
   trailing,
   includeTopInset = true,
+  scrollProgress = 0,
 }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
   const { contentMaxWidth, isCompact } = useAdaptiveLayout();
   const isBrand = !title?.trim();
   const heading = title?.trim() || brandFallback;
+  const progress = Math.min(1, Math.max(0, scrollProgress));
 
   return (
     <View
@@ -66,9 +71,12 @@ export function AppHeader({
             />
           ) : isBrand ? (
             <View style={styles.mark} accessibilityElementsHidden>
+              <View style={styles.markGlow} />
               <Text style={styles.markLetter}>e</Text>
             </View>
-          ) : null}
+          ) : (
+            <View style={styles.pageAccent} accessibilityElementsHidden />
+          )}
 
           <View style={styles.copy}>
             <Text
@@ -77,14 +85,34 @@ export function AppHeader({
             >
               {heading}
             </Text>
+            {/* Opisy w tytule — tymczasowo wyłączone
             {subtitle ? (
               <Text style={styles.subtitle} numberOfLines={2}>
                 {subtitle}
               </Text>
             ) : null}
+            */}
           </View>
         </View>
         {trailing}
+      </View>
+
+      <View
+        style={styles.progressTrack}
+        pointerEvents="none"
+        accessibilityRole="progressbar"
+        accessibilityValue={{
+          min: 0,
+          max: 100,
+          now: Math.round(progress * 100),
+        }}
+      >
+        <View
+          style={[
+            styles.progressFill,
+            { width: `${Math.round(progress * 1000) / 10}%` },
+          ]}
+        />
       </View>
     </View>
   );
@@ -93,18 +121,16 @@ export function AppHeader({
 const styles = StyleSheet.create({
   shell: {
     backgroundColor: colors.header,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
     zIndex: 20,
     ...Platform.select({
       ios: {
         shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.28,
-        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.35,
+        shadowRadius: 5,
       },
       android: {
-        elevation: 1,
+        elevation: 2,
       },
       default: {},
     }),
@@ -120,6 +146,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
+  pageAccent: {
+    width: 3,
+    alignSelf: 'stretch',
+    minHeight: 28,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
+    opacity: 0.85,
+  },
   mark: {
     width: 36,
     height: 36,
@@ -127,6 +161,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  markGlow: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: colors.highlight,
+    opacity: 0.22,
+    borderTopRightRadius: radii.full,
   },
   markLetter: {
     ...typography.bodyStrong,
@@ -149,8 +190,18 @@ const styles = StyleSheet.create({
     color: colors.primaryHover,
     letterSpacing: -0.5,
   },
-  subtitle: {
-    ...typography.small,
-    color: colors.textMuted,
+  // subtitle: {
+  //   ...typography.small,
+  //   color: colors.textMuted,
+  // },
+  progressTrack: {
+    height: 3,
+    width: '100%',
+    backgroundColor: colors.primarySoft,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
   },
 });

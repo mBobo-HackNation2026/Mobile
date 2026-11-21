@@ -2,6 +2,8 @@ import { router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   LayoutChangeEvent,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +19,7 @@ import {
   type HomeMenuItem,
 } from '@/features/home/homeMenuItems';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
+import { computeScrollProgress } from '@/lib/scrollProgress';
 import { colors, spacing, typography } from '@/theme';
 
 /** Miejsce pod etykietę pod kołem (jedna linia). */
@@ -29,12 +32,24 @@ const ITEM_PAD = 4;
 export function HomeMenuScreen() {
   const { isExpanded, showBottomNav } = useAdaptiveLayout();
   const [boardWidth, setBoardWidth] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   const hero = HOME_MENU_ITEMS.find((i) => i.hero)!;
   const satellites = HOME_MENU_ITEMS.filter((i) => !i.hero);
 
   const onBoardLayout = (event: LayoutChangeEvent) => {
     setBoardWidth(event.nativeEvent.layout.width);
+  };
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    setScrollProgress(
+      computeScrollProgress({
+        offsetY: contentOffset.y,
+        contentHeight: contentSize.height,
+        viewportHeight: layoutMeasurement.height,
+      }),
+    );
   };
 
   const layout = useMemo(() => {
@@ -72,7 +87,10 @@ export function HomeMenuScreen() {
       style={styles.root}
       edges={showBottomNav ? ['left', 'right'] : ['bottom', 'left', 'right']}
     >
-      <AppHeader subtitle="Co chcesz dziś załatwić?" />
+      <AppHeader
+        // subtitle="Co chcesz dziś załatwić?"
+        scrollProgress={scrollProgress}
+      />
 
       <ScrollView
         style={styles.flex}
@@ -81,6 +99,8 @@ export function HomeMenuScreen() {
           isExpanded && styles.contentWide,
         ]}
         showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
         <View style={styles.boardOuter} onLayout={onBoardLayout}>
           <View

@@ -1,7 +1,9 @@
 import { router, usePathname, type Href } from 'expo-router';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import {
   KeyboardAvoidingView,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
   ScrollView,
   StyleSheet,
@@ -11,6 +13,7 @@ import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/ui/AppHeader';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
+import { computeScrollProgress } from '@/lib/scrollProgress';
 import { colors, spacing } from '@/theme';
 
 /** Start — bez „Wróć”. */
@@ -37,6 +40,7 @@ interface ScreenProps {
   backFallbackHref?: Href;
   /** Tytuł w sticky headerze. Brak → marka eBobo. */
   title?: string;
+  /** Opisy w tytule — tymczasowo niewyświetlane w AppHeader. */
   subtitle?: string;
   /** Ukryj sticky header (np. ankieta z własną nawigacją). */
   header?: boolean;
@@ -53,11 +57,13 @@ export function Screen({
   backLabel,
   backFallbackHref = '/home',
   title,
-  subtitle,
+  // subtitle — opisy w tytule tymczasowo wyłączone
+  // subtitle,
   header = true,
 }: ScreenProps) {
   const pathname = usePathname();
   const { contentMaxWidth, isCompact, showBottomNav } = useAdaptiveLayout();
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   const showBack =
     back === true ||
@@ -78,6 +84,17 @@ export function Screen({
       : showBottomNav
         ? ['top', 'left', 'right']
         : ['top', 'bottom', 'left', 'right']);
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    setScrollProgress(
+      computeScrollProgress({
+        offsetY: contentOffset.y,
+        contentHeight: contentSize.height,
+        viewportHeight: layoutMeasurement.height,
+      }),
+    );
+  };
 
   const bodyContent = (
     <View
@@ -101,6 +118,8 @@ export function Screen({
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
       showsVerticalScrollIndicator={false}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
     >
       {bodyContent}
     </ScrollView>
@@ -113,10 +132,12 @@ export function Screen({
       {header ? (
         <AppHeader
           title={title}
-          subtitle={subtitle}
+          // subtitle — opisy w tytule tymczasowo wyłączone
+          // subtitle={subtitle}
           showBack={showBack}
           backLabel={backLabel}
           backFallbackHref={backFallbackHref}
+          scrollProgress={scrollProgress}
         />
       ) : null}
       {keyboard ? (

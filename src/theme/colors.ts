@@ -9,8 +9,11 @@ export const colors = {
   backgroundWarm: palette.canvasWarm,
   surface: palette.surface,
   surfaceMuted: palette.surfaceMuted,
-  /** Tło sticky headera — czysta powierzchnia. */
-  header: palette.surface,
+  /**
+   * Tło sticky headera — ciepły, delikatny ton (nie canvas, nie pure white).
+   * Spójny z notchem.
+   */
+  header: palette.header,
   border: palette.line,
   borderStrong: palette.lineStrong,
 

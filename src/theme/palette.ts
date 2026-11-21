@@ -12,8 +12,10 @@ export const palette = {
   brandMuted: '#5A9AA3',
   brandSoft: '#D8EEF1',
   brandWash: '#EAF5F6',
+  /** Delikatnie inny od canvasu — chrome / sticky header. */
+  header: '#F1EEE7',
 
-  /** Akcent UI (pasek headera, wyróżnienia). */
+  /** Akcent UI (pasek progresu, wyróżnienia). */
   accent: '#D4A017',
   accentDark: '#A67B0A',
   accentSoft: '#FBF3D9',
