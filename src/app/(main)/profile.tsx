@@ -1,0 +1,151 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { DemoBanner } from '@/components/ui/DemoBanner';
+import { Screen } from '@/components/ui/Screen';
+import { SessionCard } from '@/features/auth/SessionCard';
+import { formatDatePl } from '@/lib/format';
+import { useCalendarStore } from '@/store/useCalendarStore';
+import { useDocumentAssistantStore } from '@/store/useDocumentAssistantStore';
+import { useDocumentsStore } from '@/store/useDocumentsStore';
+import { useFacilitiesStore } from '@/store/useFacilitiesStore';
+import { useUserJourneyStore } from '@/store/useUserJourneyStore';
+import { colors, spacing, typography } from '@/theme';
+import {
+  EMPLOYMENT_LABELS,
+  INSURANCE_LABELS,
+  ROLE_LABELS,
+  STAGE_LABELS,
+} from '@/types/journey';
+
+export default function ProfileScreen() {
+  const queryClient = useQueryClient();
+  const profile = useUserJourneyStore((s) => s.profile);
+  const resetDemo = useUserJourneyStore((s) => s.resetDemo);
+  const clearCalendarData = useCalendarStore((s) => s.clearCalendarData);
+  const clearDocuments = useDocumentsStore((s) => s.clearDocuments);
+  const clearDocAssistant = useDocumentAssistantStore((s) => s.clearOverrides);
+  const clearFavorites = useFacilitiesStore((s) => s.clearFavorites);
+
+  return (
+    <Screen
+      title="Twój profil"
+      subtitle="Edytuj ankietę albo zrestartuj demo. Zmiany od razu wpływają na plan i kalkulator."
+    >
+      <DemoBanner message="Profil ankiety jest lokalny. Sesja mObywatel to wyłącznie DEMO." />
+
+      <SessionCard />
+
+      <Card elevated>
+        <Text style={styles.sectionTitle}>Twoja sytuacja</Text>
+        {profile.onboardingCompleted ? (
+          <>
+            <Row
+              label="Etap"
+              value={profile.stage ? STAGE_LABELS[profile.stage] : '—'}
+            />
+            <Row label="Rola" value={profile.role ? ROLE_LABELS[profile.role] : '—'} />
+            <Row label="Data" value={formatDatePl(profile.eventDate)} />
+            <Row
+              label="Zatrudnienie"
+              value={
+                profile.employmentType ? EMPLOYMENT_LABELS[profile.employmentType] : '—'
+              }
+            />
+            <Row
+              label="Ubezpieczenie"
+              value={
+                profile.insuranceStatus ? INSURANCE_LABELS[profile.insuranceStatus] : '—'
+              }
+            />
+            <Row
+              label="Drugi rodzic"
+              value={
+                profile.hasSecondParent == null
+                  ? '—'
+                  : profile.hasSecondParent
+                    ? 'Tak'
+                    : 'Nie'
+              }
+            />
+            <Row
+              label="Dzieci"
+              value={profile.childrenCount == null ? '—' : String(profile.childrenCount)}
+            />
+          </>
+        ) : (
+          <Text style={styles.empty}>Ankieta jeszcze nieukończona.</Text>
+        )}
+      </Card>
+
+      <View style={styles.actions}>
+        <Button label="Twoje świadczenia" onPress={() => router.push('/benefits')} />
+        <Button label="Uzupełnij dane" variant="secondary" onPress={() => router.push('/complete-data')} />
+        <Button label="Mój plan" variant="secondary" onPress={() => router.push('/home')} />
+        <Button label="Edytuj ankietę" variant="secondary" onPress={() => router.push('/onboarding')} />
+        <Button label="Dane ZUS (symulacja)" variant="secondary" onPress={() => router.push('/zus')} />
+        <Button
+          label="Sprawdź przykładową sprawę"
+          variant="secondary"
+          onPress={() => router.push('/sample-cases')}
+        />
+        <Button
+          label="Gdzie szukać pomocy"
+          variant="secondary"
+          onPress={() => router.push('/help')}
+        />
+        <Button label="Menu skrótów" variant="ghost" onPress={() => router.push('/home-menu')} />
+        <Button
+          label="Wyczyść dane lokalne"
+          variant="danger"
+          onPress={() => {
+            resetDemo();
+            clearCalendarData();
+            clearDocuments();
+            clearDocAssistant();
+            clearFavorites();
+            void queryClient.clear();
+            router.replace('/');
+          }}
+        />
+      </View>
+    </Screen>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.row}>
+      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.value}>{value}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  label: { ...typography.small, color: colors.textMuted },
+  value: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    flexShrink: 1,
+    textAlign: 'right',
+  },
+  empty: { ...typography.body, color: colors.textSecondary },
+  actions: { gap: spacing.sm, alignItems: 'stretch', width: '100%' },
+});
