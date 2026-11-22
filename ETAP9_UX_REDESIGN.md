@@ -129,4 +129,5 @@ Uwaga: FastAPI / ngrok bywał niestabilny w trakcie sesji — błędy pokazywane
 
 ## 9. Numery commitów
 
-Uzupełnij po `git commit` Etapu 9 (patrz log gałęzi).
+- `eb82f17` — `feat(etap9): redesign UX hierarchy for clearer parent journey`
+- `112a05e` — `docs: record Etap 9 UX redesign commit hash`
