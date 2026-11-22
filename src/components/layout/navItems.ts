@@ -28,7 +28,7 @@ export const secondaryNavItems = [
   { href: '/sprawy' as const, label: 'Moje sprawy' },
   { href: '/other-benefits' as const, label: 'Inne świadczenia' },
   { href: '/eligibility' as const, label: 'Ocena API (macierzyński)' },
-  { href: '/plan' as const, label: 'Checklista (stara)' },
+  { href: '/plan' as const, label: 'Checklista (filtry)' },
   { href: '/calculator' as const, label: 'Kalkulator' },
   { href: '/documents' as const, label: 'Dokumenty' },
   { href: '/zus' as const, label: 'Dane ZUS' },

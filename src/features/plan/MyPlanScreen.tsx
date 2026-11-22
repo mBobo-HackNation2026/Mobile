@@ -17,6 +17,7 @@ import {
   Landmark,
 } from 'lucide-react-native';
 
+import { ApiHealthBanner } from '@/components/ui/ApiHealthBanner';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -87,7 +88,8 @@ export function MyPlanScreen() {
 
   return (
     <Screen title="Mój plan">
-      <DemoBanner message="Plan jest demonstracyjny — terminy medyczne i lokalne oznaczamy jako orientacyjne / DEMO." />
+      <ApiHealthBanner />
+      <DemoBanner message="To lokalny plan DEMO (oś czasu). Ocena prawna i wnioski z FastAPI są w Świadczeniach; formalności API+DEMO także w Moich sprawach." />
 
       <Card>
         <Text style={styles.stage}>{plan.timeline.stageLabel}</Text>

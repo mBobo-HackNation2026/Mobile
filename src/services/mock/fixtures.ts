@@ -1,5 +1,12 @@
+import { addDays, formatISO } from 'date-fns';
+
 import type { MaternityLeaveEligibilityRequest } from '@/services/api/eligibilityCheckSchemas';
 import type { ParentProfile } from '@/types/journey';
+
+/** Daty demo względem „dziś” — unikamy absurdalnych tygodni ciąży na jury. */
+function demoDate(daysFromToday: number): string {
+  return formatISO(addDays(new Date(), daysFromToday), { representation: 'date' });
+}
 
 const baseExtras = {
   debtAmountZl: null as number | null,
@@ -50,13 +57,16 @@ export const demoProfiles: Record<string, ParentProfile> = {
   pregnant_employee: {
     stage: 'pregnancy',
     role: 'mother',
-    eventDate: '2026-06-15',
+    eventDate: demoDate(90),
     employmentType: 'employment_contract',
     insuranceStatus: 'insured',
     hasSecondParent: true,
     childrenCount: 1,
     specialCircumstances: [],
     ...baseExtras,
+    isPregnant: true,
+    isFullTimeEmployment: true,
+    fatherInsured: true,
     onboardingCompleted: true,
     isDemo: true,
     demoScenarioId: 'pregnant_employee',
@@ -64,13 +74,18 @@ export const demoProfiles: Record<string, ParentProfile> = {
   both_parents_split: {
     stage: 'after_birth',
     role: 'mother',
-    eventDate: '2026-01-10',
+    eventDate: demoDate(-40),
     employmentType: 'employment_contract',
     insuranceStatus: 'insured',
     hasSecondParent: true,
     childrenCount: 1,
     specialCircumstances: [],
     ...baseExtras,
+    isPregnant: false,
+    childAgeMonths: 1,
+    isFullTimeEmployment: true,
+    fatherInsured: true,
+    fullDoseClaimedWithin21Days: true,
     onboardingCompleted: true,
     isDemo: true,
     demoScenarioId: 'both_parents_split',
@@ -78,13 +93,14 @@ export const demoProfiles: Record<string, ParentProfile> = {
   no_insurance: {
     stage: 'pregnancy',
     role: 'mother',
-    eventDate: '2026-08-01',
+    eventDate: demoDate(120),
     employmentType: 'unemployed',
     insuranceStatus: 'not_insured',
     hasSecondParent: false,
     childrenCount: 1,
     specialCircumstances: [],
     ...baseExtras,
+    isPregnant: true,
     onboardingCompleted: true,
     isDemo: true,
     demoScenarioId: 'no_insurance',
@@ -92,7 +108,7 @@ export const demoProfiles: Record<string, ParentProfile> = {
   self_employed: {
     stage: 'pregnancy',
     role: 'mother',
-    eventDate: '2026-05-20',
+    eventDate: demoDate(75),
     employmentType: 'self_employed',
     insuranceStatus: 'insured',
     hasSecondParent: true,
@@ -100,6 +116,10 @@ export const demoProfiles: Record<string, ParentProfile> = {
     specialCircumstances: [],
     ...baseExtras,
     debtAmountZl: 0,
+    isPregnant: true,
+    isFullTimeEmployment: true,
+    fatherInsured: true,
+    insuredDaysContinuous: 180,
     onboardingCompleted: true,
     isDemo: true,
     demoScenarioId: 'self_employed',
@@ -107,13 +127,15 @@ export const demoProfiles: Record<string, ParentProfile> = {
   adoption: {
     stage: 'adoption',
     role: 'guardian',
-    eventDate: '2026-04-01',
+    eventDate: demoDate(-20),
     employmentType: 'employment_contract',
     insuranceStatus: 'insured',
     hasSecondParent: true,
     childrenCount: 1,
     specialCircumstances: [],
     ...baseExtras,
+    isAdoptionOrFosterCare: true,
+    fosterCareType: 'wniosek_o_przysposobienie',
     onboardingCompleted: true,
     isDemo: true,
     demoScenarioId: 'adoption',
@@ -121,13 +143,15 @@ export const demoProfiles: Record<string, ParentProfile> = {
   foster: {
     stage: 'foster',
     role: 'guardian',
-    eventDate: '2026-03-15',
+    eventDate: demoDate(-30),
     employmentType: 'employment_contract',
     insuranceStatus: 'insured',
     hasSecondParent: true,
     childrenCount: 1,
     specialCircumstances: [],
     ...baseExtras,
+    isAdoptionOrFosterCare: true,
+    fosterCareType: 'rodzina_zastepcza',
     onboardingCompleted: true,
     isDemo: true,
     demoScenarioId: 'foster',
@@ -135,13 +159,14 @@ export const demoProfiles: Record<string, ParentProfile> = {
   exceptional: {
     stage: 'after_birth',
     role: 'father',
-    eventDate: '2026-02-14',
+    eventDate: demoDate(-60),
     employmentType: 'civil_contract',
     insuranceStatus: 'unknown',
     hasSecondParent: false,
     childrenCount: 2,
     specialCircumstances: ['serious_illness'],
     ...baseExtras,
+    childAgeMonths: 2,
     onboardingCompleted: true,
     isDemo: true,
     demoScenarioId: 'exceptional',
@@ -152,12 +177,14 @@ export const DEMO_SCENARIO_META = [
   {
     id: 'pregnant_employee',
     title: 'Pracownica w ciąży',
-    description: 'Umowa o pracę, ubezpieczenie chorobowe, termin w czerwcu 2026.',
+    description:
+      'Umowa o pracę, ubezpieczenie chorobowe, termin porodu za ok. 3 miesiące (data względna DEMO).',
   },
   {
     id: 'both_parents_split',
     title: 'Oboje rodzice — podział urlopu',
-    description: 'Po porodzie, oboje ubezpieczeni, wspólne planowanie urlopów.',
+    description:
+      'Po porodzie (~6 tyg.), oboje ubezpieczeni — porównanie wariantów urlopu rodzicielskiego.',
   },
   {
     id: 'no_insurance',

@@ -1,49 +1,74 @@
-# Kontrakt API eBobo (frontend ↔ FastAPI) — Integration Brief v3
+# Kontrakt API eBobo (frontend ↔ FastAPI)
+
+Stan na P0/P0.1 + naprawę formalności (Catalog adapter).
 
 ## ENV
 
 ```
+EXPO_PUBLIC_API_MODE=rest|mock
 EXPO_PUBLIC_API_URL=https://…ngrok-free.app
 EXPO_PUBLIC_API_BASE_URL=…   # alias
-EXPO_PUBLIC_API_MODE=rest|mock
 ```
 
-## Endpointy
+**Expo Web:** baza URL klienta = `/zus-proxy` (`metro.config.js` → upstream z ENV).  
+**Native:** bezpośredni `EXPO_PUBLIC_API_URL`.
+
+## Endpointy używane przez FE
 
 | Metoda | Ścieżka | Status FE |
 |--------|---------|-----------|
-| GET | `/api/v1/health` | używane |
-| POST | `/api/v1/auth/session` | **live** — anonimowa sesja (bootstrap) |
-| POST | `/api/v1/auth/mobywatel/login` | **live** — DEMO mObywatel |
-| GET | `/api/v1/auth/me` | **live** — profil sesji |
-| POST | `/api/v1/eligibility/check/{benefit_code}` | **live** — silnik v2 |
-| ~~POST `/api/v1/eligibility/check`~~ | **usunięte** — nie używać |
-| POST | `/api/v1/eligibility/evaluate` | hub katalog — mock |
-| POST | `/api/v1/calculations/parental` | REST + fallback mock |
-| POST | `/api/v1/documents/analyze` | REST + fallback mock |
-| GET | `/api/v1/knowledge` | REST + fallback mock |
+| GET | `/api/v1/health` | live — baner `ApiHealthBanner` |
+| POST | `/api/v1/auth/session` | live — sesja anonimowa |
+| POST | `/api/v1/auth/mobywatel/login` | live — DEMO |
+| GET | `/api/v1/auth/me` | live |
+| POST | `/api/v1/auth/refresh` | live (store) |
+| POST | `/api/v1/auth/logout` | live |
+| POST | `/api/v1/eligibility/check/{benefit_code}` | **live × 9** — `CatalogEligibilityAdapter` |
+| POST | `/api/v1/benefits/calculate/{benefit_code}` | **live** — kalkulator |
+| POST | `/api/v1/benefits/compare/urlop-rodzicielski` | **live** — 3 warianty |
+| POST | `/api/v1/documents/analyze` | REST + jawny fallback mock |
+| GET | `/api/v1/knowledge` | REST + jawny fallback mock |
 
-### Benefit codes (obecnie)
+### Nieużywane / legacy w REST P0
 
-- `zasilek_macierzynski_urlop_macierzynski`
-- `zasilek_w_wysokosci_zasilku_macierzynskiego`
+- `HybridEligibilityAdapter` — niepodpięty
+- `POST /api/v1/calculations/parental` — kalkulator REST go nie woła
+- `POST /api/v1/eligibility/evaluate` — hub mock; REST używa katalogu 9× check
 
-### Auth
+## 9 kodów świadczeń
 
-- Sesja nie jest wymagana do `/eligibility/check/{code}` ani ankiety.
-- Awaria `/auth/session` nie blokuje UI.
+1. `zasilek_macierzynski_urlop_macierzynski`
+2. `zasilek_w_wysokosci_zasilku_macierzynskiego`
+3. `urlop_ojcowski`
+4. `urlop_rodzicielski`
+5. `zasilek_chorobowy_w_ciazy`
+6. `swiadczenie_rehabilitacyjne`
+7. `uzupelniajacy_urlop_macierzynski`
+8. `urlop_na_warunkach_urlopu_macierzynskiego`
+9. `zasilek_pogrzebowy_martwe_urodzenie`
+
+## Formalności (checklista / terminy)
+
+`CatalogEligibilityAdapter` po ocenie 9 świadczeń wywołuje `deriveFormalitiesFromBenefits`:
+
+- pozycje z `plan` / `procedure` → checklista + radar (**źródło FastAPI**),
+- daty kalendarza tylko gdy `submitBy` zaczyna się od `YYYY-MM-DD`,
+- opisy tekstowe terminów → radar z ostrzeżeniem, bez sztucznej daty,
+- `documentAssistant.applications` z dokumentów planu API.
+
+Ekrany `/sprawy` i `/plan` **dokładają** formalne zadania z lokalnego `buildParentPlan` (kategorie `zus` | `admin` | `deadline`), oznaczone `[Plan lokalny DEMO]`.
+
+`/home` (Mój plan) pozostaje lokalną osią czasu DEMO i **nie** twierdzi, że jest wyrokiem silnika prawnego.
+
+## Auth
+
+- Ocena publiczna nie wymaga konta.
+- Awaria `/auth/session` nie blokuje ankiety/eligibility.
 - Token: SecureStore (native) / sessionStorage (web).
-- 401 → wyczyść token, zachowaj lokalną ankietę, zaproponuj nową sesję.
+- Logout czyści Zustand + TanStack Query + ulubione/kalendarz/dokumenty.
 
-### Eligibility v2
+## Zasady REST
 
-- `plan.weeks` może być `null` — wtedy `duration_description` lub „Okres wymaga ustalenia”.
-- `possible_solutions[].related_benefit_code` → CTA „Sprawdź moje uprawnienia” (świadomy drugi request).
-- Art. 30 / warnings: ostrożna prezentacja, bez „masz potwierdzone prawo”.
-
-### Tryb `rest` (hybryda hubu)
-
-1. Mock `evaluate` (rodzicielski, radar, sprawy…).
-2. Live `POST /eligibility/check/zasilek_macierzynski_urlop_macierzynski`.
-3. Wynik API zastępuje kartę `maternity`.
-4. 502/błąd → pełny mock + warning.
+- Eligibility / calculate / compare: **brak cichego mocka**.
+- `null` kwot/okresów nie mapować na `0`.
+- `plan: null` → brak lokalnego dopisywania dokumentów „na sztywno”.

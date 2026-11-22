@@ -1,13 +1,21 @@
-import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ApiHealthBanner } from '@/components/ui/ApiHealthBanner';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Screen } from '@/components/ui/Screen';
 import { ChecklistList, type ChecklistFilter } from '@/features/checklist/ChecklistList';
+import { buildParentPlan } from '@/features/plan/buildParentPlan';
+import {
+  mergeChecklists,
+  planTasksToChecklist,
+} from '@/features/plan/planTasksToChecklist';
+import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import { eligibilityService } from '@/services/api';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, radii, spacing, typography } from '@/theme';
@@ -23,6 +31,11 @@ const FILTERS: { id: ChecklistFilter; label: string }[] = [
   { id: 'needs_verification', label: 'Do weryfikacji' },
 ];
 
+/**
+ * Checklista z filtrami — te same źródła co /sprawy:
+ * FastAPI procedure + lokalny plan DEMO (zus/admin/deadline).
+ * Chronologiczny Mój plan pozostaje na /home.
+ */
 export default function PlanScreen() {
   const profile = useUserJourneyStore((s) => s.profile);
   const overrides = useUserJourneyStore((s) => s.checklistOverrides);
@@ -34,6 +47,11 @@ export default function PlanScreen() {
     queryFn: () => eligibilityService.evaluate(profile),
     enabled: profile.onboardingCompleted,
   });
+
+  const localChecklist = useMemo(() => {
+    const plan = buildParentPlan(profile, overrides);
+    return planTasksToChecklist(plan.tasks);
+  }, [profile, overrides]);
 
   if (!profile.onboardingCompleted) {
     return (
@@ -48,33 +66,13 @@ export default function PlanScreen() {
     );
   }
 
-  if (query.isLoading) {
-    return (
-      <Screen>
-        <Card>
-          <Text style={styles.muted}>Ładujemy checklistę…</Text>
-        </Card>
-      </Screen>
-    );
-  }
-
-  if (query.isError) {
-    return (
-      <Screen>
-        <EmptyState
-          title="Nie udało się wczytać planu"
-          description="Sprawdź połączenie z API albo wróć do trybu mock."
-          actionLabel="Spróbuj ponownie"
-          onAction={() => query.refetch()}
-        />
-      </Screen>
-    );
-  }
-
-  const items: ChecklistItem[] = (query.data?.checklist ?? []).map((item) => ({
-    ...item,
-    status: normalizeChecklistStatus(overrides[item.id] ?? item.status),
-  }));
+  const apiChecklist = query.isError || !query.data ? [] : query.data.checklist;
+  const items: ChecklistItem[] = mergeChecklists(apiChecklist, localChecklist).map(
+    (item) => ({
+      ...item,
+      status: normalizeChecklistStatus(overrides[item.id] ?? item.status),
+    }),
+  );
 
   const counts = {
     required: items.filter((i) => (i.priority ?? 'optional') === 'required').length,
@@ -87,12 +85,38 @@ export default function PlanScreen() {
   return (
     <Screen
       title="Checklista i terminy"
-      subtitle="Każdy krok: co, kiedy, dlaczego, gdzie i jakie dokumenty. Rozróżniamy działania obowiązkowe, opcjonalne i wymagające weryfikacji."
+      subtitle="Filtry po priorytecie. Pozycje [FastAPI] vs [Plan lokalny DEMO] są rozdzielone w opisie."
     >
-      <DemoBanner />
+      <ApiHealthBanner />
+      <DemoBanner message="To widok filtrów formalności. Pełny chronologiczny Mój plan: /home." />
+
+      {query.isLoading ? (
+        <Card>
+          <Text style={styles.muted}>Dociągam ocenę FastAPI — lokalna checklista DEMO już poniżej.</Text>
+        </Card>
+      ) : null}
+
+      {query.isError ? (
+        <Card>
+          <Text style={styles.body}>
+            {apiErrorMessage(
+              query.error,
+              'API niedostępne — pokazujemy checklistę z lokalnego planu DEMO.',
+            )}
+          </Text>
+          <Button label="Spróbuj ponownie" onPress={() => query.refetch()} />
+        </Card>
+      ) : null}
+
+      <Button
+        label="Wróć do Mój plan (oś czasu)"
+        variant="secondary"
+        onPress={() => router.push('/home')}
+      />
+
       <Text style={styles.summary}>
         Obowiązkowe: {counts.required} · Opcjonalne: {counts.optional} · Do weryfikacji:{' '}
-        {counts.needs_verification}
+        {counts.needs_verification} · Razem: {items.length}
       </Text>
 
       <View style={styles.filters}>
@@ -150,5 +174,10 @@ const styles = StyleSheet.create({
   muted: {
     ...typography.body,
     color: colors.textSecondary,
+  },
+  body: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
   },
 });

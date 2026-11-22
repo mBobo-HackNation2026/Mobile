@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { isIsoDateString } from '@/services/api/deriveFormalitiesFromBenefits';
 import { formatDatePl } from '@/lib/format';
 import { colors, spacing, typography } from '@/theme';
 import {
@@ -40,7 +41,7 @@ export function DeadlineRadarSection({ items }: DeadlineRadarSectionProps) {
     <View style={styles.section}>
       <Text style={styles.title}>Radar terminów</Text>
       <Text style={styles.subtitle}>
-        Ostrzeżenia i daty pochodzą z backendu (demo). Każdy wpis ma bezpośrednią akcję.
+        Terminy z planu FastAPI. Opis bez daty ISO nie trafia do kalendarza jako dzień.
       </Text>
       {items.map((item) => (
         <Card key={item.id}>
@@ -50,9 +51,14 @@ export function DeadlineRadarSection({ items }: DeadlineRadarSectionProps) {
               tone={URGENCY_TONE[item.urgency]}
             />
             {item.isDemo ? <Badge label="Demo" tone="demo" /> : null}
+            <Badge label="FastAPI" tone="primary" />
           </View>
           <Text style={styles.cardTitle}>{item.title}</Text>
-          <Text style={styles.meta}>Do: {formatDatePl(item.submitBy)}</Text>
+          <Text style={styles.meta}>
+            {isIsoDateString(item.submitBy)
+              ? `Do: ${formatDatePl(item.submitBy)}`
+              : `Termin (opis API): ${item.submitBy}`}
+          </Text>
           {item.office ? <Text style={styles.meta}>Adresat: {item.office}</Text> : null}
           {item.warning ? <Text style={styles.warning}>{item.warning}</Text> : null}
           <Button

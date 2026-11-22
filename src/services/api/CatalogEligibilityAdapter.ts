@@ -1,3 +1,4 @@
+import { deriveFormalitiesFromBenefits } from '@/services/api/deriveFormalitiesFromBenefits';
 import {
   BENEFIT_CODES,
   BENEFIT_CODE_LABEL,
@@ -75,6 +76,11 @@ export class CatalogEligibilityAdapter implements EligibilityService {
       benefits.find((b) => b.status === 'insufficient_data') ??
       benefits[0];
 
+    const formalities = deriveFormalitiesFromBenefits(benefits);
+    warnings.push(
+      'Checklista/terminy w tej ocenie pochodzą z planów FastAPI (gdy silnik je zwróci). Mój plan (/home) to osobna lista lokalna DEMO — nie mylić z decyzją ZUS.',
+    );
+
     return {
       isDemo: false,
       ruleSetVersion: `fastapi-catalog-v${[...rulesVersions].join('+') || 'unknown'}`,
@@ -86,17 +92,13 @@ export class CatalogEligibilityAdapter implements EligibilityService {
         ctaLabel: preferred.nextStepLabel,
         ctaHref: preferred.nextStepHref,
       },
-      upcomingDeadline: null,
-      deadlines: [],
-      checklist: [],
+      upcomingDeadline: formalities.upcomingDeadline,
+      deadlines: formalities.deadlines,
+      checklist: formalities.checklist,
       relatedBenefits: [],
-      deadlineRadar: [],
+      deadlineRadar: formalities.deadlineRadar,
       postpartumKit: null,
-      documentAssistant: {
-        applications: [],
-        retiredNote: null,
-        isDemo: false,
-      },
+      documentAssistant: formalities.documentAssistant,
       warnings: unique(warnings),
       assumptions: unique(assumptions),
       sourceUrls: ['https://www.zus.pl'],
