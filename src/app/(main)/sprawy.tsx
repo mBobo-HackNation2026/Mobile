@@ -22,7 +22,7 @@ import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import { formatDatePl } from '@/lib/format';
 import { eligibilityService, getApiMode } from '@/services/api';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 import { normalizeChecklistStatus, type ChecklistItem } from '@/types/journey';
 
 /**
@@ -95,12 +95,19 @@ export default function SprawyScreen() {
   return (
     <Screen title="Moje sprawy" subtitle="Lista rzeczy do załatwienia.">
       <ApiHealthBanner />
-      <DemoBanner message="Pozycje z oceny sytuacji oraz z lokalnego planu. To nie jest decyzja ZUS." />
+      <DemoBanner message="Lista formalności z oceny i planu lokalnego — nie decyzja ZUS." />
+
+      <Card elevated style={styles.heroCard}>
+        <Text style={styles.heroTitle}>Co masz do załatwienia?</Text>
+        <Text style={styles.body}>
+          Oznaczaj kroki po kolei. Najważniejsze sprawy są na górze listy.
+        </Text>
+      </Card>
 
       <View style={styles.summaryRow}>
-        <SummaryChip label="Do zrobienia" value={todoCount} />
-        <SummaryChip label="W trakcie / inne" value={pendingCount} />
-        <SummaryChip label="Zrobione" value={doneCount} />
+        <SummaryChip label="Do zrobienia" value={todoCount} tone="todo" />
+        <SummaryChip label="W trakcie" value={pendingCount} tone="pending" />
+        <SummaryChip label="Zrobione" value={doneCount} tone="done" />
       </View>
 
       {query.isError ? (
@@ -196,14 +203,37 @@ export default function SprawyScreen() {
   );
 }
 
-function SummaryChip({ label, value }: { label: string; value: number }) {
+function SummaryChip({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: 'todo' | 'pending' | 'done';
+}) {
   return (
-    <View style={styles.summaryChip}>
-      <Text style={styles.summaryValue}>{value}</Text>
+    <View
+      style={[styles.summaryChip, summaryTone[tone]]}
+      accessibilityLabel={`${label}: ${value}`}
+    >
+      <Text style={[styles.summaryValue, summaryValueTone[tone]]}>{value}</Text>
       <Text style={styles.summaryLabel}>{label}</Text>
     </View>
   );
 }
+
+const summaryTone = StyleSheet.create({
+  todo: { backgroundColor: colors.warningSoft },
+  pending: { backgroundColor: colors.infoSoft },
+  done: { backgroundColor: colors.successSoft },
+});
+
+const summaryValueTone = StyleSheet.create({
+  todo: { color: colors.warning },
+  pending: { color: colors.info },
+  done: { color: colors.success },
+});
 
 function applyOverrides(
   items: ChecklistItem[],
@@ -220,18 +250,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
+  heroCard: { gap: spacing.xs },
+  heroTitle: { ...typography.h3, color: colors.text },
   summaryChip: {
     flex: 1,
-    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
+    borderColor: 'transparent',
+    borderRadius: radii.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.xs,
     alignItems: 'center',
     gap: 2,
+    minHeight: 64,
   },
-  summaryValue: { ...typography.h2, color: colors.text },
+  summaryValue: { ...typography.h2, fontSize: 22, lineHeight: 28 },
   summaryLabel: {
     ...typography.caption,
     color: colors.textMuted,

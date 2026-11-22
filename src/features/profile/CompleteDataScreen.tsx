@@ -94,14 +94,15 @@ export function CompleteDataScreen() {
     >
       <DemoBanner message="Uzupełnij tylko to, czego potrzebujemy do oceny. Nie zgadujemy pól automatycznie." />
 
-      <Card>
-        <Text style={styles.title}>Możemy dokładniej sprawdzić Twoje uprawnienia</Text>
+      <Card elevated>
+        <Text style={styles.title}>Uzupełnij brakujące informacje</Text>
         <Text style={styles.body}>
-          Braki pochodzą z silnika jako stabilne identyfikatory pól. To nie jest decyzja ZUS.
+          Potrzebujemy jeszcze kilku odpowiedzi, żeby dokładniej ocenić świadczenia.
+          To nie jest decyzja ZUS.
         </Text>
       </Card>
 
-      <Card>
+      <Card elevated>
         <Text style={styles.section}>Czego potrzebujemy?</Text>
         {isLoading && !evaluation ? (
           <Text style={styles.meta}>Ładowanie oceny…</Text>

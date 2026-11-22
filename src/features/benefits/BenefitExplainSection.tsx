@@ -132,10 +132,10 @@ export function BenefitExplainSection({
 
   if (mode !== 'rest') {
     return (
-      <Card style={styles.wrap}>
+      <Card elevated style={styles.wrap}>
         <Text style={styles.title}>Nie wszystko jasne?</Text>
         <Text style={styles.body}>
-          Wyjaśnienie wyniku wymaga połączenia z silnikiem świadczeń (tryb REST).
+          Wyjaśnienie wyniku wymaga połączenia z silnikiem świadczeń.
         </Text>
       </Card>
     );
@@ -143,6 +143,7 @@ export function BenefitExplainSection({
 
   return (
     <Card
+      elevated
       style={
         prominent
           ? { ...styles.wrap, ...styles.wrapProminent }
@@ -334,8 +335,9 @@ function ExplainCard({
 const styles = StyleSheet.create({
   wrap: { gap: spacing.sm },
   wrapProminent: {
-    borderColor: colors.primaryMuted,
+    borderColor: colors.primarySoft,
     borderWidth: 1.5,
+    backgroundColor: colors.surface,
   },
   title: { ...typography.h3, color: colors.text },
   section: {
@@ -380,7 +382,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderWidth: 1,
-    borderColor: colors.primaryMuted,
+    borderColor: colors.primarySoft,
   },
   chipText: { ...typography.caption, color: colors.primary, fontWeight: '700' },
 });

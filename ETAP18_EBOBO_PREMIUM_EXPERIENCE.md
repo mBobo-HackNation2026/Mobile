@@ -4,7 +4,7 @@
 **Branch:** `feature/ebobo-frontend-mvp`  
 **HEAD bazowy (Etap 17):** `3dc2ab4`  
 **Commit UI polish:** `2555f9a`  
-**Werdykt:** **PREMIUM UI GOTOWE WARUNKOWO**
+**Werdykt:** **PREMIUM UI GOTOWE WARUNKOWO** (po domknięciu polishu Fazy C/D)
 
 ---
 
@@ -55,7 +55,10 @@ Hierarchia prowadzi użytkownika: **świadczenia → szczegóły → kwota → f
 | Onboarding / Welcome | Tokeny + ChoiceChip (grubszy border, soft selected) — bez nowych kroków |
 | Mój Plan | Elevated focus card; spokojniejsze border colors |
 | Sample cases / Help | Spokojniejsze intro; help na `backgroundWarm` |
-| Profil / complete-data | Dziedziczą Card/Button/TextField (bez zmiany mapowania missing_fields) |
+| Profil / complete-data | Elevated „Twoja sytuacja”; spokojniejsze microcopy; pełna szerokość CTA |
+| Moje Sprawy | Hero „Co masz do załatwienia?” + kolorowe liczniki todo/w trakcie/zrobione |
+| Wyjaśnienia AI | Elevated card; soft borders; bez żargonu „REST” w copy |
+| Onboarding finish | Ekran „Sprawdzamy Twoje możliwości” → `/benefits` (bez sztucznego delay) |
 
 ## 14. Stany loading / error / success
 
@@ -79,7 +82,8 @@ Hierarchia prowadzi użytkownika: **świadczenia → szczegóły → kwota → f
 ## 17. Responsywność
 
 - `contentMaxWidth` / `navMaxWidth` ograniczone na desktopie.
-- Pełna macierz screenshotów 320–1440 — **częściowo** (capture browser zwrócił czarny kadr; wymaga ręcznego przeglądu lokalnego).
+- Screenshoty zapisane w `docs/etap18/screenshots/` (390 + desktop 1440 welcome; loading hub; kalkulator; sprawy; help; profil).
+- Pełna macierz 320/375/428/768/1024 — nie wszystkie szerokości; 390 + 1440 pokryte.
 
 ## 18. Regresja
 
@@ -98,10 +102,11 @@ Hierarchia prowadzi użytkownika: **świadczenia → szczegóły → kwota → f
 
 | Commit | Opis |
 |---|---|
-| `2555f9a` | UI polish Etap 18 (tokens + ekrany) — już na branchu |
-| *(ten raport)* | docs Etap 18 |
+| `2555f9a` | UI polish Etap 18 (tokens + hub/nav/calc) |
+| `051039d` | docs Etap 18 (pierwszy raport) |
+| *(follow-up)* | Sprawy / Profil / AI / onboarding finish + screenshots |
 
-**Sync origin:** branch był zsynchronizowany po `2555f9a`; raport = osobny commit.
+**Sync origin:** po pushu follow-upu.
 
 ---
 
@@ -110,9 +115,9 @@ Hierarchia prowadzi użytkownika: **świadczenia → szczegóły → kwota → f
 1. **Czy wygląda jak spójny produkt konsumencki?** Tak — wspólna paleta i komponenty; nadal miejsce na dalszy polish detali.
 2. **Czy „Moje świadczenia” jest wizualnie najlepszym ekranem?** Tak, to celowo flagowy hub z wyraźną hierarchią.
 3. **Czy rodzic bez znajomości ZUS znajdzie następny krok?** Tak — CTA „Zobacz szczegóły” / „Uzupełnij dane” + Plan/Sprawy.
-4. **Czy coś wygląda jak nieskończony prototyp?** Tak, częściowo: brak pełnego pakietu screenshotów jury; niektóre ekrany (Sprawy checklista, AI panel) dostały głównie dziedziczenie tokenów, nie osobny redesign layoutu.
-5. **Czy można pokazać jury bez dużych zmian?** Tak funkcjonalnie + wizualnie bazowo; warto zrobić 5–10 ręcznych screenshotów mobile przed slajdami.
+4. **Czy coś wygląda jak nieskończony prototyp?** Nadal drobne: checklista Spraw ma gęstą listę pozycji; pełna macierz viewportów nie jest w 100% udokumentowana.
+5. **Czy można pokazać jury bez dużych zmian?** Tak — pakiet screenshotów w `docs/etap18/screenshots/` + spójna paleta. Publiczne demo nadal zależy od stałego hostingu (Etap 17).
 
 ### Werdykt
 
-**PREMIUM UI GOTOWE WARUNKOWO** — foundation + hub + nav + calc gotowe; pełna dokumentacja wizualna (screenshoty wszystkich szerokości) i głębszy polish Spraw/AI = follow-up prezentacyjny, nie blocker funkcjonalny.
+**PREMIUM UI GOTOWE WARUNKOWO** — foundation + hub + nav + calc + Sprawy/Profil/AI/onboarding finish + screenshoty 390/1440. Warunki: pełniejsza macierz viewportów opcjonalna; publiczny URL FE/BE nadal poza FE.

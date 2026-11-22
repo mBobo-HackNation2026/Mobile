@@ -32,14 +32,15 @@ export default function ProfileScreen() {
 
   return (
     <Screen
-      title="Profil i scenariusz"
+      title="Twój profil"
       subtitle="Edytuj ankietę albo zrestartuj demo. Zmiany od razu wpływają na plan i kalkulator."
     >
-      <DemoBanner message="Profil ankiety jest lokalny. Sesja mObywatel poniżej to wyłącznie DEMO API." />
+      <DemoBanner message="Profil ankiety jest lokalny. Sesja mObywatel to wyłącznie DEMO." />
 
       <SessionCard />
 
-      <Card>
+      <Card elevated>
+        <Text style={styles.sectionTitle}>Twoja sytuacja</Text>
         {profile.onboardingCompleted ? (
           <>
             <Row
@@ -125,16 +126,26 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: spacing.md,
     paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
   label: { ...typography.small, color: colors.textMuted },
-  value: { ...typography.bodyStrong, color: colors.text, flexShrink: 1, textAlign: 'right' },
+  value: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    flexShrink: 1,
+    textAlign: 'right',
+  },
   empty: { ...typography.body, color: colors.textSecondary },
-  actions: { gap: spacing.sm, alignItems: 'flex-start' },
+  actions: { gap: spacing.sm, alignItems: 'stretch', width: '100%' },
 });

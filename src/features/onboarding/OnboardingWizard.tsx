@@ -3,7 +3,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -70,6 +77,7 @@ export function OnboardingWizard() {
   const queryClient = useQueryClient();
   const { isCompact } = useAdaptiveLayout();
   const [step, setStep] = useState(0);
+  const [finishing, setFinishing] = useState(false);
 
   const form = useForm<OnboardingFormValues>({
     resolver: zodResolver(onboardingSchema),
@@ -137,6 +145,7 @@ export function OnboardingWizard() {
     const burialDays =
       data.daysSinceBurial.trim() === '' ? null : Number(data.daysSinceBurial);
 
+    setFinishing(true);
     completeOnboarding({
       stage: data.stage,
       role: data.role,
@@ -170,7 +179,8 @@ export function OnboardingWizard() {
     });
     const nextProfile = useUserJourneyStore.getState().profile;
     void prefetchCatalogEligibility(queryClient, nextProfile);
-    router.push('/benefits');
+    // Bez sztucznego opóźnienia — hub pokazuje loading oceny.
+    router.replace('/benefits');
   };
 
   const goBack = () => {
@@ -197,6 +207,20 @@ export function OnboardingWizard() {
       shouldValidate: true,
     });
   };
+
+  if (finishing) {
+    return (
+      <Screen header={false} back={false} edges={['top', 'left', 'right', 'bottom']}>
+        <Card elevated style={styles.finishingCard}>
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text style={styles.finishingTitle}>Sprawdzamy Twoje możliwości</Text>
+          <Text style={styles.finishingBody}>
+            Analizujemy świadczenia na podstawie Twoich odpowiedzi.
+          </Text>
+        </Card>
+      </Screen>
+    );
+  }
 
   return (
     <Screen
@@ -692,5 +716,22 @@ const styles = StyleSheet.create({
     color: colors.text,
     flexShrink: 1,
     textAlign: 'right',
+  },
+  finishingCard: {
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.xxl,
+    marginTop: spacing.xl,
+  },
+  finishingTitle: {
+    ...typography.h2,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  finishingBody: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    maxWidth: 360,
   },
 });
