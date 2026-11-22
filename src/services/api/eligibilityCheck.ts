@@ -21,7 +21,9 @@ export {
   BENEFIT_CODE_LABEL,
   DEFAULT_MATERNITY_BENEFIT_CODE,
   formatPlanDuration,
+  formatPlanRate,
   isCautiousEligibilityResult,
+  isKnownBenefitCode,
 } from '@/services/api/eligibilityCheckSchemas';
 
 /** Mapowanie tytułu ubezpieczenia z ankiety → kontrakt BE. */
@@ -46,9 +48,19 @@ export function mapInsuranceTitle(
   }
 }
 
+function triState(
+  value: boolean | null | undefined,
+): boolean | null | undefined {
+  if (value === true) return true;
+  if (value === false) return false;
+  if (value === null) return null;
+  return undefined;
+}
+
 /**
  * Mapuje profil ankiety na request FastAPI.
- * `unknown` / brak danych → pomijamy pole lub null (NIGDY nie wysyłamy false za „Nie wiem”).
+ * `unknown` / brak danych → null lub pominięcie (NIGDY false za „Nie wiem”).
+ * Pola finansowe (dochód) NIE trafiają tu z profilu — tylko z kalkulatora.
  */
 export function profileToEligibilityCheckRequest(
   profile: ParentProfile,
@@ -60,11 +72,14 @@ export function profileToEligibilityCheckRequest(
     insured_at_birth = true;
   } else if (profile.insuranceStatus === 'not_insured') {
     insured_at_birth = false;
-  } else {
+  } else if (profile.insuranceStatus === 'unknown') {
     insured_at_birth = null;
   }
 
   const insurance_title = mapInsuranceTitle(profile.employmentType);
+  const special = profile.specialCircumstances ?? [];
+  const isStillbirth = special.includes('stillbirth') || special.includes('child_death');
+  const isPremature = special.includes('premature_birth');
 
   const body: MaternityLeaveEligibilityRequest = {
     children_count: children,
@@ -83,10 +98,80 @@ export function profileToEligibilityCheckRequest(
     body.employment_ended_reason = profile.employmentEndedReason;
   }
 
+  body.other_employment_secured = triState(profile.otherEmploymentSecured ?? null);
+  body.father_insured = triState(profile.fatherInsured ?? null);
+  body.child_age_months = profile.childAgeMonths ?? null;
+  body.is_pregnant =
+    profile.stage === 'pregnancy'
+      ? true
+      : profile.stage === 'after_birth' ||
+          profile.stage === 'adoption' ||
+          profile.stage === 'foster'
+        ? false
+        : triState(profile.isPregnant ?? null);
+  body.insured_days_continuous = profile.insuredDaysContinuous ?? null;
+  body.child_hospitalization_weeks = profile.childHospitalizationWeeks ?? null;
+  body.gestational_week_at_birth = profile.gestationalWeekAtBirth ?? null;
+  body.birth_weight_grams = profile.birthWeightGrams ?? null;
+  body.postpartum_weeks_elapsed = profile.postpartumWeeksElapsed ?? null;
+
+  if (profile.stage === 'adoption' || profile.stage === 'foster') {
+    body.is_adoption_or_foster_care = true;
+  } else if (profile.isAdoptionOrFosterCare != null) {
+    body.is_adoption_or_foster_care = profile.isAdoptionOrFosterCare;
+  }
+
+  if (profile.fosterCareType) {
+    body.foster_care_type = profile.fosterCareType;
+  } else if (profile.stage === 'adoption') {
+    body.foster_care_type = 'wniosek_o_przysposobienie';
+  } else if (profile.stage === 'foster') {
+    body.foster_care_type = 'rodzina_zastepcza';
+  }
+
+  body.child_age_years = profile.childAgeYears ?? null;
+  body.school_obligation_deferred = triState(
+    profile.schoolObligationDeferred ?? null,
+  );
+  body.za_zyciem_certificate = triState(profile.zaZyciemCertificate ?? null);
+  body.full_dose_claimed_within_21_days = triState(
+    profile.fullDoseClaimedWithin21Days ?? null,
+  );
+  body.other_parent_used_parental_leave_weeks =
+    profile.otherParentUsedParentalLeaveWeeks ?? null;
+  body.part_time_fraction_during_parental_leave =
+    profile.partTimeFractionDuringParentalLeave ?? null;
+  body.sickness_benefit_period_exhausted = triState(
+    profile.sicknessBenefitPeriodExhausted ?? null,
+  );
+  body.medical_prognosis_recovery_possible = triState(
+    profile.medicalPrognosisRecoveryPossible ?? null,
+  );
+  body.excluded_from_rehabilitation_benefit = triState(
+    profile.excludedFromRehabilitationBenefit ?? null,
+  );
+
+  if (isStillbirth) {
+    body.is_stillbirth_or_infant_death = true;
+  } else {
+    body.is_stillbirth_or_infant_death = triState(
+      profile.isStillbirthOrInfantDeath ?? null,
+    );
+  }
+
+  body.days_since_death = profile.daysSinceDeath ?? null;
+  body.days_since_burial = profile.daysSinceBurial ?? null;
+  body.is_full_time_employment = triState(profile.isFullTimeEmployment ?? null);
+  body.employment_duration_months = profile.employmentDurationMonths ?? null;
+
+  if (isPremature && profile.gestationalWeekAtBirth == null) {
+    // nie zgadujemy tygodnia — zostaw null, BE poprosi o dane
+  }
+
   return body;
 }
 
-/** Czyści undefined / niepotrzebne null opcjonalne przed JSON. */
+/** Czyści undefined przed JSON; zachowuje jawne `null` (Nie wiem). */
 export function serializeEligibilityCheckRequest(
   input: MaternityLeaveEligibilityRequest,
 ): Record<string, unknown> {
@@ -94,25 +179,20 @@ export function serializeEligibilityCheckRequest(
     children_count: input.children_count,
   };
 
-  if (input.insured_at_birth !== undefined) {
-    out.insured_at_birth = input.insured_at_birth;
-  }
-  if (input.insurance_title != null) {
-    out.insurance_title = input.insurance_title;
-  }
-  if (input.debt_amount_zl != null && input.debt_amount_zl !== '') {
-    out.debt_amount_zl = input.debt_amount_zl;
-  }
-  if (input.employment_ended_reason != null) {
-    out.employment_ended_reason = input.employment_ended_reason;
+  const keys = Object.keys(input) as (keyof MaternityLeaveEligibilityRequest)[];
+  for (const key of keys) {
+    if (key === 'children_count') continue;
+    const value = input[key];
+    if (value === undefined) continue;
+    out[key] = value;
   }
 
   return out;
 }
 
-/** POST `/api/v1/eligibility/check/{benefit_code}` — wspólny serwis dla wszystkich świadczeń. */
+/** POST `/api/v1/eligibility/check/{benefit_code}` */
 export async function checkBenefitEligibility(
-  benefitCode: BenefitCode,
+  benefitCode: BenefitCode | string,
   input: MaternityLeaveEligibilityRequest,
   signal?: AbortSignal,
 ): Promise<EligibilityCheckResult> {
@@ -125,7 +205,11 @@ export async function checkBenefitEligibility(
       auth: false,
       signal,
     });
-    return parseApiResponse(eligibilityResultSchema, raw, `eligibility/check/${benefitCode}`);
+    return parseApiResponse(
+      eligibilityResultSchema,
+      raw,
+      `eligibility/check/${benefitCode}`,
+    );
   } catch (error) {
     if (error instanceof ApiClientError && error.status === 404) {
       throw new ApiClientError(

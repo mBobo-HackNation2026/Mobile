@@ -4,6 +4,7 @@ import {
   createAnonymousSession,
   fetchAuthMe,
   loginMobywatelDemo,
+  logoutSession,
 } from '@/services/api/authApi';
 import type { AuthStatus, UserProfile } from '@/services/api/authSchemas';
 import { ApiClientError } from '@/services/api/httpClient';
@@ -40,6 +41,8 @@ interface AuthState {
   handleUnauthorized: () => Promise<void>;
   clearSessionExpiredNotice: () => void;
   refreshProfile: () => Promise<void>;
+  /** Wylogowanie API + lokalne czyszczenie tokenu (profil ankiety czyści UI). */
+  logout: () => Promise<void>;
   setEntryMode: (mode: EntryMode) => void;
 }
 
@@ -263,6 +266,21 @@ export const useAuthStore = create<AuthState>((set, get) => {
       if (!get().accessToken) return;
       const profile = await fetchAuthMe();
       set({ profile, status: profile.status, userId: profile.user_id });
+    },
+
+    logout: async () => {
+      await logoutSession();
+      await clearStoredSession();
+      setAccessTokenBridge(null);
+      set({
+        accessToken: null,
+        userId: null,
+        status: null,
+        profile: null,
+        entryMode: null,
+        sessionExpiredNotice: null,
+        phase: 'ready',
+      });
     },
   };
 });

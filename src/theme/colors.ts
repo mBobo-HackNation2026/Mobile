@@ -37,6 +37,13 @@ export const colors = {
   zus: palette.zus,
   zusDark: palette.zusDark,
   zusSoft: palette.zusSoft,
+  zusNavy: palette.zusNavy,
+  zusNavySoft: palette.zusNavySoft,
+
+  health: palette.health,
+  healthSoft: palette.healthSoft,
+  admin: palette.admin,
+  adminSoft: palette.adminSoft,
 
   warning: palette.warning,
   warningSoft: palette.warningSoft,

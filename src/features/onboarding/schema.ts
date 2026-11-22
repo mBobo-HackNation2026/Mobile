@@ -26,6 +26,22 @@ export const employmentEndedReasonValues = [
   'unknown',
 ] as const;
 
+/** yes/no/unknown — unknown → null w API (nigdy false). */
+export const triStateValues = ['yes', 'no', 'unknown'] as const;
+export type TriState = (typeof triStateValues)[number];
+
+export const TRI_STATE_LABELS: Record<TriState, string> = {
+  yes: 'Tak',
+  no: 'Nie',
+  unknown: 'Nie wiem',
+};
+
+export function triStateToBool(value: TriState): boolean | null {
+  if (value === 'yes') return true;
+  if (value === 'no') return false;
+  return null;
+}
+
 export const onboardingSchema = z.object({
   stage: z.enum(['planning', 'pregnancy', 'after_birth', 'adoption', 'foster']),
   role: z.enum(['mother', 'father', 'partner', 'guardian']),
@@ -54,6 +70,27 @@ export const onboardingSchema = z.object({
       message: 'Podaj kwotę w PLN albo zostaw puste.',
     }),
   employmentEndedReason: z.enum(employmentEndedReasonValues),
+  /** Pola silnika — progressive disclosure. */
+  fatherInsured: z.enum(triStateValues),
+  childAgeMonths: z
+    .string()
+    .refine((value) => value === '' || /^\d{1,3}$/.test(value), {
+      message: 'Podaj liczbę miesięcy albo zostaw puste (nie wiem).',
+    }),
+  zaZyciemCertificate: z.enum(triStateValues),
+  fullDoseClaimedWithin21Days: z.enum(triStateValues),
+  childHospitalizationWeeks: z
+    .string()
+    .refine((value) => value === '' || /^\d{1,3}$/.test(value), {
+      message: 'Podaj liczbę tygodni albo zostaw puste.',
+    }),
+  daysSinceBurial: z
+    .string()
+    .refine((value) => value === '' || /^\d{1,4}$/.test(value), {
+      message: 'Podaj liczbę dni albo zostaw puste.',
+    }),
+  isFullTimeEmployment: z.enum(triStateValues),
+  otherEmploymentSecured: z.enum(triStateValues),
 });
 
 export type OnboardingFormValues = z.infer<typeof onboardingSchema>;
@@ -65,6 +102,7 @@ export const ONBOARDING_STEPS = [
   { id: 'work', title: 'Praca i ubezpieczenie' },
   { id: 'family', title: 'Rodzina' },
   { id: 'special', title: 'Okoliczności' },
+  { id: 'engine', title: 'Szczegóły uprawnień' },
   { id: 'summary', title: 'Podsumowanie' },
 ] as const;
 

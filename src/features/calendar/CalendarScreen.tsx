@@ -11,21 +11,30 @@ import { Screen } from '@/components/ui/Screen';
 import { DayPanel } from '@/features/calendar/DayPanel';
 import { MonthGrid } from '@/features/calendar/MonthGrid';
 import { ReminderPanel } from '@/features/calendar/ReminderPanel';
+import { buildParentPlan } from '@/features/plan/buildParentPlan';
+import {
+  facilityPinsToDeadlines,
+  mergeDeadlines,
+  planTasksToDeadlines,
+} from '@/features/plan/planToDeadlines';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import { monthTitlePl, toDateKey } from '@/lib/calendarGrid';
 import { eligibilityService } from '@/services/api';
 import { useCalendarStore } from '@/store/useCalendarStore';
+import { useFacilitiesStore } from '@/store/useFacilitiesStore';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, spacing, typography } from '@/theme';
 import { router } from 'expo-router';
 
 export function CalendarScreen() {
   const profile = useUserJourneyStore((s) => s.profile);
+  const overrides = useUserJourneyStore((s) => s.checklistOverrides);
   const notes = useCalendarStore((s) => s.notes);
   const selectedDate = useCalendarStore((s) => s.selectedDate);
   const setSelectedDate = useCalendarStore((s) => s.setSelectedDate);
   const upsertNote = useCalendarStore((s) => s.upsertNote);
   const deleteNote = useCalendarStore((s) => s.deleteNote);
+  const pinnedEvents = useFacilitiesStore((s) => s.pinnedEvents);
   const { columns, isCompact } = useAdaptiveLayout();
 
   const [month, setMonth] = useState(() => new Date());
@@ -37,7 +46,20 @@ export function CalendarScreen() {
     enabled: profile.onboardingCompleted,
   });
 
-  const deadlines = query.data?.deadlines ?? [];
+  const plan = useMemo(
+    () => buildParentPlan(profile, overrides),
+    [profile, overrides],
+  );
+
+  const deadlines = useMemo(
+    () =>
+      mergeDeadlines(
+        query.data?.deadlines ?? [],
+        planTasksToDeadlines(plan.tasks),
+        facilityPinsToDeadlines(pinnedEvents),
+      ),
+    [query.data?.deadlines, plan.tasks, pinnedEvents],
+  );
 
   useEffect(() => {
     if (!selectedDate) {
@@ -88,10 +110,10 @@ export function CalendarScreen() {
 
   if (!profile.onboardingCompleted) {
     return (
-      <Screen>
+      <Screen title="Kalendarz">
         <EmptyState
           title="Kalendarz potrzebuje ankiety"
-          description="Najpierw uzupełnij dane, żeby pokazać terminy złożenia świadczeń."
+          description="Najpierw uzupełnij dane, żeby pokazać terminy z planu i świadczeń."
           actionLabel="Ankieta"
           onAction={() => router.push('/onboarding')}
         />
@@ -100,11 +122,20 @@ export function CalendarScreen() {
   }
 
   return (
-    <Screen
-      title="Kalendarz terminów"
-      subtitle="Do kiedy możesz złożyć wnioski, własne notatki i przypomnienia o zbliżającym się końcu okna."
-    >
-      <DemoBanner message="Terminy są demonstracyjne — zawsze zweryfikuj je w oficjalnym źródle ZUS." />
+    <Screen title="Kalendarz">
+      <DemoBanner message="Terminy z Mój plan, świadczeń i mapy (dni otwarte DEMO). Zawsze zweryfikuj w oficjalnym źródle." />
+      <View style={styles.topActions}>
+        <Button
+          label="Wróć do Mój plan"
+          variant="secondary"
+          onPress={() => router.push('/home')}
+        />
+        <Button
+          label="Mapa pomocy"
+          variant="ghost"
+          onPress={() => router.push('/map')}
+        />
+      </View>
 
       <View style={styles.monthNav}>
         <Button
@@ -189,6 +220,11 @@ export function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
+  topActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -28,6 +28,15 @@ export const palette = {
   zus: '#009639',
   zusDark: '#007A2E',
   zusSoft: '#E6F7ED',
+  /** Granat — kategoria zadań ZUS / zasiłki (brief). */
+  zusNavy: '#0D3B66',
+  zusNavySoft: '#E3ECF4',
+
+  /** Kategorie planu (zdrowie / urząd). */
+  health: '#2F6B4F',
+  healthSoft: '#E3F0E9',
+  admin: '#5A6B75',
+  adminSoft: '#E8ECF0',
 
   /** Tła i powierzchnie. */
   canvas: '#F3F7F8',

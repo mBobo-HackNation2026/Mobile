@@ -1,4 +1,4 @@
-import { router, usePathname, type Href } from 'expo-router';
+import { useCanGoBack, usePathname, type Href } from 'expo-router';
 import { ReactNode, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -16,10 +16,16 @@ import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import { computeScrollProgress } from '@/lib/scrollProgress';
 import { colors, spacing } from '@/theme';
 
-/** Start — bez „Wróć”. */
+/** Start (Mój plan) — bez „Wróć”. */
 const HOME_PATHS = new Set(['/home', '/']);
 /** Zakładki dolnego menu — „Wróć” tylko gdy jest historia. */
-const TAB_PATHS = new Set(['/home', '/sprawy', '/calculator', '/profile']);
+const TAB_PATHS = new Set([
+  '/home',
+  '/calendar',
+  '/benefits',
+  '/map',
+  '/profile',
+]);
 
 interface ScreenProps {
   children: ReactNode;
@@ -62,6 +68,7 @@ export function Screen({
   header = true,
 }: ScreenProps) {
   const pathname = usePathname();
+  const canGoBack = useCanGoBack();
   const { contentMaxWidth, isCompact, showBottomNav } = useAdaptiveLayout();
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -69,7 +76,7 @@ export function Screen({
     back === true ||
     (back !== false &&
       !HOME_PATHS.has(pathname) &&
-      (!TAB_PATHS.has(pathname) || router.canGoBack()));
+      (!TAB_PATHS.has(pathname) || canGoBack));
 
   /**
    * Gdy jest AppHeader — top inset bierze header (ten sam kolor pod notchem).

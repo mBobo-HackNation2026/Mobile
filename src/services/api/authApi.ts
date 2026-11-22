@@ -41,3 +41,16 @@ export async function fetchAuthMe(signal?: AbortSignal): Promise<UserProfile> {
   });
   return parseApiResponse(userProfileSchema, raw, 'auth/me');
 }
+
+/** Wylogowanie sesji API — błędy sieci nie blokują lokalnego czyszczenia. */
+export async function logoutSession(signal?: AbortSignal): Promise<void> {
+  try {
+    await apiRequest<unknown>(API_PATHS.authLogout, {
+      method: 'POST',
+      auth: true,
+      signal,
+    });
+  } catch {
+    // Lokalne czyszczenie i tak nastąpi po stronie store.
+  }
+}

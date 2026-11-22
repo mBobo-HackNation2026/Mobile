@@ -1,13 +1,11 @@
+import { CatalogEligibilityAdapter } from '@/services/api/CatalogEligibilityAdapter';
 import { getApiMode } from '@/services/api/config';
-import { HybridEligibilityAdapter } from '@/services/api/HybridEligibilityAdapter';
 import {
-  RestCalculatorAdapter,
   RestDocumentsAdapter,
   RestKnowledgeAdapter,
 } from '@/services/api/RestAdapter';
-import type { ApiServices } from '@/services/api/types';
+import type { ApiServices, CalculatorService } from '@/services/api/types';
 import {
-  withCalculatorFallback,
   withDocumentsFallback,
   withKnowledgeFallback,
 } from '@/services/api/withMockFallback';
@@ -19,8 +17,9 @@ import {
 } from '@/services/mock/MockAdapter';
 
 /**
- * rest: macierzyński z FastAPI (hybrid hub), kalkulator/docs/knowledge — REST z fallbackiem mock.
- * mock: wszystko lokalnie.
+ * rest: katalog 9 świadczeń z FastAPI — BEZ cichego mocka eligibility/calculate/compare.
+ * Dokumenty/knowledge: jawny fallback mock z ostrzeżeniem (poza silnikiem uprawnień).
+ * mock: wszystko lokalnie, oznaczone DEMO.
  */
 function createServices(): ApiServices {
   const rest = getApiMode() === 'rest';
@@ -34,12 +33,18 @@ function createServices(): ApiServices {
     };
   }
 
+  /** Legacy CalculatorService — ekran kalkulatora P0 używa calculateBenefitAmount / compare bezpośrednio. */
+  const restCalculator: CalculatorService = {
+    async calculate() {
+      throw new Error(
+        'Użyj POST /api/v1/benefits/calculate/{benefit_code} oraz compare/urlop-rodzicielski — legacy /calculations/parental nie jest używany w REST P0.',
+      );
+    },
+  };
+
   return {
-    eligibility: new HybridEligibilityAdapter(),
-    calculator: withCalculatorFallback(
-      new RestCalculatorAdapter(),
-      new MockCalculatorAdapter(),
-    ),
+    eligibility: new CatalogEligibilityAdapter(),
+    calculator: restCalculator,
     documents: withDocumentsFallback(
       new RestDocumentsAdapter(),
       new MockDocumentsAdapter(),
@@ -65,10 +70,12 @@ export {
   checkMaternityEligibility,
   checkApiHealth,
   profileToEligibilityCheckRequest,
+  mapInsuranceTitle,
   DEFAULT_MATERNITY_BENEFIT_CODE,
   BENEFIT_CODES,
   BENEFIT_CODE_LABEL,
   formatPlanDuration,
+  formatPlanRate,
   isCautiousEligibilityResult,
 } from '@/services/api/eligibilityCheck';
 export type {
@@ -76,9 +83,14 @@ export type {
   EligibilityCheckResult,
   MaternityLeaveEligibilityRequest,
 } from '@/services/api/eligibilityCheckSchemas';
+export { calculateBenefitAmount } from '@/services/api/benefitsCalculate';
+export type { CalculatedAmount } from '@/services/api/benefitsCalculate';
+export { compareParentalLeave } from '@/services/api/parentalCompare';
+export type { ParentalLeaveCompareResponse } from '@/services/api/parentalCompare';
 export {
   createAnonymousSession,
   loginMobywatelDemo,
   fetchAuthMe,
+  logoutSession,
 } from '@/services/api/authApi';
 export type { SessionResponse, UserProfile, AuthStatus } from '@/services/api/authSchemas';

@@ -22,16 +22,16 @@ export function getEligibilityPresentation(
   }
 
   if (status === 'requires_verification') {
-    if (result.plan != null && result.missing_data.length > 0) {
+    if (result.missing_data.length > 0) {
       return 'conditional_plan';
     }
-    if (result.plan == null && result.possible_solutions.length > 0) {
+    if (result.possible_solutions.length > 0) {
       return 'alternative_path';
     }
     if (result.plan != null) {
       return 'conditional_plan';
     }
-    return 'alternative_path';
+    return 'unknown';
   }
 
   return 'unknown';

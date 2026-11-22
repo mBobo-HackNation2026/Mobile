@@ -29,7 +29,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
         {!collapsed ? (
           <>
             <Text style={styles.brandTitle}>eBobo</Text>
-            <Text style={styles.brandTagline}>Przewodnik świadczeń</Text>
+            <Text style={styles.brandTagline}>Mój plan rodzica</Text>
             <Badge label="Demo" tone="demo" />
           </>
         ) : (

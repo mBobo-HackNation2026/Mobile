@@ -13,7 +13,7 @@ import { BENEFIT_TONE, CONDITION_LABEL, CONDITION_TONE } from '@/features/benefi
 import { resolveBenefitInstitution } from '@/features/benefits/resolveBenefitInstitution';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import { formatDatePl } from '@/lib/format';
-import { eligibilityService } from '@/services/api';
+import { eligibilityService, getApiMode } from '@/services/api';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, spacing, typography } from '@/theme';
 import { BENEFIT_STATUS_LABEL } from '@/types/benefits';
@@ -22,6 +22,7 @@ import { INSTITUTIONS } from '@/types/institutions';
 export function BenefitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const profile = useUserJourneyStore((s) => s.profile);
+  const mode = getApiMode();
 
   const query = useQuery({
     queryKey: ['eligibility', profile],
@@ -79,7 +80,13 @@ export function BenefitDetailScreen() {
 
   return (
     <Screen title={benefit.title} subtitle={benefit.headline} backFallbackHref="/benefits">
-      <DemoBanner />
+      <DemoBanner
+        message={
+          mode === 'rest'
+            ? 'Ocena z FastAPI na podstawie Twoich danych — to nie jest decyzja ZUS ani połączenie z kontem ZUS.'
+            : 'Tryb demonstracyjny — dane przykładowe, bez połączenia z ZUS.'
+        }
+      />
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Badge label={BENEFIT_STATUS_LABEL[benefit.status]} tone={BENEFIT_TONE[benefit.status]} />
@@ -136,6 +143,18 @@ export function BenefitDetailScreen() {
         ))}
       </Card>
 
+      {benefit.warnings && benefit.warnings.length > 0 ? (
+        <Card>
+          <Badge label="Ostrzeżenia silnika" tone="warning" />
+          <Text style={styles.section}>Uwagi do wyniku</Text>
+          {benefit.warnings.map((warning) => (
+            <Text key={warning} style={styles.warn}>
+              • {warning}
+            </Text>
+          ))}
+        </Card>
+      ) : null}
+
       <Card>
         <Text style={styles.section}>Jak uzyskać świadczenie?</Text>
         {benefit.procedure ? (
@@ -153,7 +172,7 @@ export function BenefitDetailScreen() {
               Do kiedy:{' '}
               {benefit.procedure.submitBy
                 ? formatDatePl(benefit.procedure.submitBy)
-                : 'Bez sztywnego terminu w demo'}
+                : 'Brak sztywnego terminu w odpowiedzi API'}
             </Text>
             {benefit.procedure.steps.map((step, index) => (
               <Text key={step} style={styles.meta}>
@@ -165,6 +184,12 @@ export function BenefitDetailScreen() {
             ) : null}
             <Button label="Przejdź do dokumentów" onPress={() => router.push('/documents')} />
           </>
+        ) : benefit.planMissing ? (
+          <Text style={styles.body}>
+            Silnik nie zwrócił planu formalności dla tego wyniku (plan: null). Nie
+            uzupełniamy dokumentów ani terminów lokalnie — uzupełnij dane albo sprawdź
+            rozwiązania.
+          </Text>
         ) : (
           <Text style={styles.body}>
             Najpierw usuń przeszkodę albo uzupełnij dane — wtedy pokażemy procedurę wniosku.
@@ -179,9 +204,11 @@ export function BenefitDetailScreen() {
             'Kwota pojawi się po kalkulacji w backendzie. Nie liczymy jej lokalnie.'}
         </Text>
         <Button
-          label="Otwórz kalkulator"
+          label="Otwórz kalkulator dla tego świadczenia"
           variant="secondary"
-          onPress={() => router.push('/calculator')}
+          onPress={() =>
+            router.push(`/calculator?benefit=${encodeURIComponent(benefit.id)}`)
+          }
         />
       </Card>
 
@@ -218,4 +245,5 @@ const styles = StyleSheet.create({
   rowTitle: { ...typography.bodyStrong, color: colors.text },
   link: { ...typography.bodyStrong, color: colors.primary, marginBottom: spacing.xs },
   muted: { ...typography.body, color: colors.textSecondary },
+  warn: { ...typography.body, color: colors.warning, marginBottom: spacing.xs },
 });

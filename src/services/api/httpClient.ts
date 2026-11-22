@@ -59,19 +59,41 @@ export async function apiRequest<T>(
     body = JSON.stringify(options.body);
   }
 
+  const timeoutMs = 20_000;
+  const controller = new AbortController();
+  const externalSignal = options.signal;
+  const onExternalAbort = () => controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort();
+    else externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+  }
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   let response: Response;
   try {
     response = await fetch(url, {
       method: options.method ?? (options.body || options.formData ? 'POST' : 'GET'),
       headers,
       body,
-      signal: options.signal,
+      signal: controller.signal,
     });
-  } catch {
+  } catch (error) {
+    const aborted =
+      (error instanceof Error && error.name === 'AbortError') ||
+      controller.signal.aborted;
     throw new ApiClientError(
-      'Brak połączenia z serwerem. Sprawdź EXPO_PUBLIC_API_URL albo użyj scenariuszy demo, gdy tunel jest niedostępny.',
+      aborted
+        ? 'Przekroczono czas oczekiwania na FastAPI. Sprawdź tunel / CORS albo ponów.'
+        : 'Brak połączenia z serwerem. Sprawdź EXPO_PUBLIC_API_URL albo użyj scenariuszy demo, gdy tunel jest niedostępny.',
       0,
+      null,
+      aborted ? 'timeout' : 'network_error',
     );
+  } finally {
+    clearTimeout(timeoutId);
+    if (externalSignal) {
+      externalSignal.removeEventListener('abort', onExternalAbort);
+    }
   }
 
   if (!response.ok) {

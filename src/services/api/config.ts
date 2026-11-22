@@ -1,6 +1,10 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 export type ApiMode = 'mock' | 'rest';
+
+/** Same-origin proxy Metro (`metro.config.js`) — omija CORS w Expo Web. */
+export const WEB_API_PROXY_PREFIX = '/zus-proxy';
 
 function readExtra(key: string): string | undefined {
   const extra = Constants.expoConfig?.extra as Record<string, string> | undefined;
@@ -20,6 +24,14 @@ export function getApiMode(): ApiMode {
 }
 
 export function getApiBaseUrl(): string {
+  /**
+   * Web: wołamy `/zus-proxy/...` (same origin) → Metro → FastAPI.
+   * Native: bezpośredni URL z .env.
+   */
+  if (Platform.OS === 'web') {
+    return WEB_API_PROXY_PREFIX;
+  }
+
   const base =
     process.env.EXPO_PUBLIC_API_URL ??
     process.env.EXPO_PUBLIC_API_BASE_URL ??
@@ -38,11 +50,19 @@ export const API_PATHS = {
   authSession: '/api/v1/auth/session',
   authMobywatelLogin: '/api/v1/auth/mobywatel/login',
   authMe: '/api/v1/auth/me',
-  /** Silnik uprawnień FastAPI v2 — `POST /eligibility/check/{benefit_code}`. */
+  authRefresh: '/api/v1/auth/refresh',
+  authLogout: '/api/v1/auth/logout',
+  /** Silnik uprawnień FastAPI — `POST /eligibility/check/{benefit_code}`. */
   eligibilityCheck: (benefitCode: string) =>
     `/api/v1/eligibility/check/${encodeURIComponent(benefitCode)}`,
-  /** Starszy / rozszerzony kontrakt hubu świadczeń (mock lub przyszły BE). */
+  /** Kalkulacja kwoty — `POST /benefits/calculate/{benefit_code}`. */
+  benefitsCalculate: (benefitCode: string) =>
+    `/api/v1/benefits/calculate/${encodeURIComponent(benefitCode)}`,
+  /** Porównanie wariantów urlopu rodzicielskiego. */
+  benefitsCompareParental: '/api/v1/benefits/compare/urlop-rodzicielski',
+  /** Starszy / rozszerzony kontrakt hubu świadczeń (tylko mock). */
   eligibilityEvaluate: '/api/v1/eligibility/evaluate',
+  /** Legacy — nie używać w REST P0 (zastąpione benefits/calculate). */
   calculationsParental: '/api/v1/calculations/parental',
   documentsAnalyze: '/api/v1/documents/analyze',
   knowledge: '/api/v1/knowledge',

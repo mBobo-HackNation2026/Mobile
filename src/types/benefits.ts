@@ -78,6 +78,10 @@ export interface BenefitAssessment {
   sourceUrls: string[];
   legalBasisNote: string | null;
   requiresVerification: boolean;
+  /** Ostrzeżenia z API — pokazywane także przy wyniku pozytywnym. */
+  warnings?: string[];
+  /** Czy silnik zwrócił plan: null (jawnie). */
+  planMissing?: boolean;
 }
 
 export const BENEFIT_STATUS_LABEL: Record<BenefitPresentationStatus, string> = {

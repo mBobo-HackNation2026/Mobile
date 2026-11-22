@@ -84,7 +84,7 @@ export function BenefitsHubScreen() {
       <DemoBanner
         message={
           mode === 'rest'
-            ? 'Macierzyński: FastAPI. Reszta hubu: mock. To nie jest decyzja ZUS.'
+            ? '9 świadczeń: FastAPI /eligibility/check/{code}. Bez cichego mocka. To nie jest decyzja ZUS. Deklaracja ankiety ≠ potwierdzenie ZUS.'
             : 'Ocena jest symulacją mock — nie decyzją ZUS. Ustaw EXPO_PUBLIC_API_MODE=rest, by podłączyć silnik.'
         }
       />
@@ -126,17 +126,17 @@ export function BenefitsHubScreen() {
       </Card>
 
       <Card>
-        <Badge label={mode === 'rest' ? 'FastAPI w hubie' : 'Mock'} tone="primary" />
-        <Text style={styles.cardTitle}>Silnik macierzyński</Text>
+        <Badge label={mode === 'rest' ? 'FastAPI katalog 9' : 'Mock'} tone="primary" />
+        <Text style={styles.cardTitle}>Kalkulator i porównanie</Text>
         <Text style={styles.body}>
           {mode === 'rest'
-            ? 'Karta macierzyńskiego pochodzi z `/api/v1/eligibility/check/{benefit_code}` (gdy BE odpowiada). Tu: scenariusze i powiązane świadczenia.'
-            : 'Włącz EXPO_PUBLIC_API_MODE=rest, żeby karta macierzyńskiego brała wynik z FastAPI.'}
+            ? 'Kwoty: POST /benefits/calculate/{code}. Podział rodzicielskiego: compare/urlop-rodzicielski.'
+            : 'W trybie mock kalkulator używa lokalnych fixture’ów DEMO.'}
         </Text>
         <Button
-          label="Scenariusze API (macierzyński)"
+          label="Otwórz kalkulator"
           variant="secondary"
-          onPress={() => router.push('/eligibility')}
+          onPress={() => router.push('/calculator')}
         />
       </Card>
 
@@ -164,6 +164,12 @@ function BenefitCard({ benefit }: { benefit: BenefitAssessment }) {
       <Text style={styles.cardTitle}>{benefit.title}</Text>
       <Text style={styles.body}>{benefit.headline}</Text>
       <Text style={styles.meta}>{benefit.summary}</Text>
+      {benefit.warnings && benefit.warnings.length > 0 ? (
+        <Badge label={`${benefit.warnings.length} ostrzeż.`} tone="warning" />
+      ) : null}
+      {benefit.planMissing ? (
+        <Badge label="Brak planu formalności" tone="neutral" />
+      ) : null}
       <Text style={styles.next}>Następny krok: {benefit.nextStepLabel}</Text>
       <Button
         label={benefit.nextStepLabel}

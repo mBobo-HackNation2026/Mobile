@@ -11,6 +11,7 @@ import { formatDatePl } from '@/lib/format';
 import { useCalendarStore } from '@/store/useCalendarStore';
 import { useDocumentAssistantStore } from '@/store/useDocumentAssistantStore';
 import { useDocumentsStore } from '@/store/useDocumentsStore';
+import { useFacilitiesStore } from '@/store/useFacilitiesStore';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, spacing, typography } from '@/theme';
 import {
@@ -27,6 +28,7 @@ export default function ProfileScreen() {
   const clearCalendarData = useCalendarStore((s) => s.clearCalendarData);
   const clearDocuments = useDocumentsStore((s) => s.clearDocuments);
   const clearDocAssistant = useDocumentAssistantStore((s) => s.clearOverrides);
+  const clearFavorites = useFacilitiesStore((s) => s.clearFavorites);
 
   return (
     <Screen
@@ -79,11 +81,14 @@ export default function ProfileScreen() {
       </Card>
 
       <View style={styles.actions}>
-        <Button label="Ponów ocenę świadczeń" onPress={() => router.push('/benefits')} />
+        <Button label="Mój plan" onPress={() => router.push('/home')} />
+        <Button label="Mapa pomocy" variant="secondary" onPress={() => router.push('/map')} />
+        <Button label="Ponów ocenę świadczeń" variant="secondary" onPress={() => router.push('/benefits')} />
         <Button label="Edytuj ankietę" variant="secondary" onPress={() => router.push('/onboarding')} />
         <Button label="Dane ZUS (symulacja)" variant="secondary" onPress={() => router.push('/zus')} />
         <Button label="Scenariusze demo" variant="secondary" onPress={() => router.push('/demo')} />
         <Button label="Kalendarz" variant="secondary" onPress={() => router.push('/calendar')} />
+        <Button label="Menu skrótów" variant="ghost" onPress={() => router.push('/home-menu')} />
         <Button
           label="Restart demo"
           variant="danger"
@@ -92,6 +97,7 @@ export default function ProfileScreen() {
             clearCalendarData();
             clearDocuments();
             clearDocAssistant();
+            clearFavorites();
             void queryClient.clear();
             router.replace('/');
           }}

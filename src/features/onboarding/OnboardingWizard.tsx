@@ -15,10 +15,13 @@ import { TextField } from '@/components/ui/TextField';
 import {
   ONBOARDING_STEPS,
   SPECIAL_CIRCUMSTANCE_LABELS,
+  TRI_STATE_LABELS,
   isSensitiveSituation,
   onboardingSchema,
+  triStateToBool,
   type OnboardingFormValues,
   type SpecialCircumstance,
+  type TriState,
 } from '@/features/onboarding/schema';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
@@ -47,6 +50,14 @@ const defaultValues: OnboardingFormValues = {
   specialCircumstances: ['none'],
   debtAmountZl: '',
   employmentEndedReason: 'unknown',
+  fatherInsured: 'unknown',
+  childAgeMonths: '',
+  zaZyciemCertificate: 'unknown',
+  fullDoseClaimedWithin21Days: 'unknown',
+  childHospitalizationWeeks: '',
+  daysSinceBurial: '',
+  isFullTimeEmployment: 'unknown',
+  otherEmploymentSecured: 'unknown',
 };
 
 export function OnboardingWizard() {
@@ -113,6 +124,15 @@ export function OnboardingWizard() {
         ? null
         : Number(data.debtAmountZl.replace(',', '.'));
 
+    const months =
+      data.childAgeMonths.trim() === '' ? null : Number(data.childAgeMonths);
+    const hospWeeks =
+      data.childHospitalizationWeeks.trim() === ''
+        ? null
+        : Number(data.childHospitalizationWeeks);
+    const burialDays =
+      data.daysSinceBurial.trim() === '' ? null : Number(data.daysSinceBurial);
+
     completeOnboarding({
       stage: data.stage,
       role: data.role,
@@ -130,10 +150,21 @@ export function OnboardingWizard() {
         data.insuranceStatus === 'not_insured' && data.employmentEndedReason !== 'unknown'
           ? (data.employmentEndedReason as EmploymentEndedReason)
           : null,
+      fatherInsured: triStateToBool(data.fatherInsured),
+      childAgeMonths:
+        months != null && !Number.isNaN(months) ? months : null,
+      zaZyciemCertificate: triStateToBool(data.zaZyciemCertificate),
+      fullDoseClaimedWithin21Days: triStateToBool(data.fullDoseClaimedWithin21Days),
+      childHospitalizationWeeks:
+        hospWeeks != null && !Number.isNaN(hospWeeks) ? hospWeeks : null,
+      daysSinceBurial:
+        burialDays != null && !Number.isNaN(burialDays) ? burialDays : null,
+      isFullTimeEmployment: triStateToBool(data.isFullTimeEmployment),
+      otherEmploymentSecured: triStateToBool(data.otherEmploymentSecured),
       isDemo: false,
       demoScenarioId: null,
     });
-    router.push('/eligibility');
+    router.push('/benefits');
   };
 
   const goBack = () => {
@@ -356,6 +387,134 @@ export function OnboardingWizard() {
                 ),
               )}
             </View>
+          </View>
+        ) : null}
+
+        {current.id === 'engine' ? (
+          <View style={styles.block}>
+            <Text style={styles.blockTitle}>Szczegóły potrzebne silnikowi uprawnień</Text>
+            <Text style={styles.blockHint}>
+              „Nie wiem” trafia do API jako brak danych (null), nie jako „nie”. Deklaracja
+              nie jest potwierdzeniem ZUS. Dochód zbieramy dopiero w kalkulatorze.
+            </Text>
+
+            {(values.role === 'father' || values.hasSecondParent) && (
+              <ChoiceGroup
+                title="Czy ojciec / drugi rodzic ma ubezpieczenie chorobowe?"
+                options={(Object.keys(TRI_STATE_LABELS) as TriState[]).map((key) => ({
+                  key,
+                  label: TRI_STATE_LABELS[key],
+                }))}
+                selected={values.fatherInsured}
+                onSelect={(key) => form.setValue('fatherInsured', key as TriState)}
+                compact={isCompact}
+              />
+            )}
+
+            {(values.stage === 'after_birth' || values.role === 'father') && (
+              <Controller
+                control={form.control}
+                name="childAgeMonths"
+                render={({ field, fieldState }) => (
+                  <TextField
+                    label="Wiek dziecka (pełne miesiące)"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    placeholder="np. 2"
+                    hint="Ważne m.in. dla urlopu ojcowskiego. Puste = nie wiem."
+                    error={fieldState.error?.message}
+                    keyboardType="numeric"
+                  />
+                )}
+              />
+            )}
+
+            <ChoiceGroup
+              title="Zaświadczenie „Za życiem”?"
+              options={(Object.keys(TRI_STATE_LABELS) as TriState[]).map((key) => ({
+                key,
+                label: TRI_STATE_LABELS[key],
+              }))}
+              selected={values.zaZyciemCertificate}
+              onSelect={(key) => form.setValue('zaZyciemCertificate', key as TriState)}
+              compact={isCompact}
+            />
+
+            <ChoiceGroup
+              title="Wniosek o pełny wymiar urlopu rodzicielskiego w 21 dni od porodu?"
+              options={(Object.keys(TRI_STATE_LABELS) as TriState[]).map((key) => ({
+                key,
+                label: TRI_STATE_LABELS[key],
+              }))}
+              selected={values.fullDoseClaimedWithin21Days}
+              onSelect={(key) =>
+                form.setValue('fullDoseClaimedWithin21Days', key as TriState)
+              }
+              compact={isCompact}
+            />
+
+            <ChoiceGroup
+              title="Zatrudnienie w pełnym wymiarze czasu pracy?"
+              options={(Object.keys(TRI_STATE_LABELS) as TriState[]).map((key) => ({
+                key,
+                label: TRI_STATE_LABELS[key],
+              }))}
+              selected={values.isFullTimeEmployment}
+              onSelect={(key) => form.setValue('isFullTimeEmployment', key as TriState)}
+              compact={isCompact}
+            />
+
+            {values.insuranceStatus === 'not_insured' ? (
+              <ChoiceGroup
+                title="Czy po ustaniu zatrudnienia zapewniono inne zatrudnienie? (art. 30)"
+                options={(Object.keys(TRI_STATE_LABELS) as TriState[]).map((key) => ({
+                  key,
+                  label: TRI_STATE_LABELS[key],
+                }))}
+                selected={values.otherEmploymentSecured}
+                onSelect={(key) =>
+                  form.setValue('otherEmploymentSecured', key as TriState)
+                }
+                compact={isCompact}
+              />
+            ) : null}
+
+            {values.specialCircumstances.includes('premature_birth') ||
+            values.stage === 'after_birth' ? (
+              <Controller
+                control={form.control}
+                name="childHospitalizationWeeks"
+                render={({ field, fieldState }) => (
+                  <TextField
+                    label="Tygodnie hospitalizacji noworodka (jeśli dotyczy)"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    placeholder="puste = nie wiem"
+                    hint="Uzupełniający urlop macierzyński — nie zgadujemy wartości."
+                    error={fieldState.error?.message}
+                    keyboardType="numeric"
+                  />
+                )}
+              />
+            ) : null}
+
+            {values.specialCircumstances.includes('stillbirth') ||
+            values.specialCircumstances.includes('child_death') ? (
+              <Controller
+                control={form.control}
+                name="daysSinceBurial"
+                render={({ field, fieldState }) => (
+                  <TextField
+                    label="Dni od pochówku (zasiłek pogrzebowy)"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    placeholder="puste = nie wiem"
+                    error={fieldState.error?.message}
+                    keyboardType="numeric"
+                  />
+                )}
+              />
+            ) : null}
           </View>
         ) : null}
 

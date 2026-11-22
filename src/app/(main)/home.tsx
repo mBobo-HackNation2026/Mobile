@@ -1,5 +1,5 @@
-import { HomeMenuScreen } from '@/features/home/HomeMenuScreen';
+import { MyPlanScreen } from '@/features/plan/MyPlanScreen';
 
 export default function HomeRoute() {
-  return <HomeMenuScreen />;
+  return <MyPlanScreen />;
 }

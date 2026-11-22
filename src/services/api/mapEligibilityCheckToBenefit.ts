@@ -1,6 +1,8 @@
 import { getEligibilityPresentation } from '@/features/eligibility/eligibilityUi';
 import {
+  BENEFIT_CODE_LABEL,
   formatPlanDuration,
+  formatPlanRate,
   isCautiousEligibilityResult,
   type EligibilityCheckResult,
 } from '@/services/api/eligibilityCheckSchemas';
@@ -15,28 +17,24 @@ import {
 import { resolveInstitutionFromText } from '@/types/institutions';
 import type { ParentProfile } from '@/types/journey';
 
-const MATERNITY_ID = 'maternity';
-
 /** Mapuje wynik FastAPI `/eligibility/check/{code}` na kartę hubu A–E (bez lokalnej logiki prawnej). */
 export function mapEligibilityCheckToBenefit(
   result: EligibilityCheckResult,
-  profile: ParentProfile,
+  _profile: ParentProfile,
 ): BenefitAssessment {
   const status = mapPresentationStatus(result);
   const cautious = isCautiousEligibilityResult(result);
-  const title =
-    profile.role === 'father'
-      ? 'Urlop ojcowski / zasiłek macierzyński (ocena API)'
-      : result.benefit_name || 'Zasiłek macierzyński';
+  const benefitId = result.benefit_code;
+  const title = result.benefit_name || benefitId;
 
   const remedies = result.possible_solutions.map((solution, index) =>
-    mapSolutionToRemedy(solution, index),
+    mapSolutionToRemedy(solution, index, benefitId),
   );
 
-  const next = resolveNextStep(status, remedies, cautious);
+  const next = resolveNextStep(status, remedies, cautious, benefitId);
 
   return {
-    id: MATERNITY_ID,
+    id: benefitId,
     title,
     status: cautious && status === 'likely_eligible' ? 'needs_review' : status,
     headline: cautious
@@ -50,27 +48,43 @@ export function mapEligibilityCheckToBenefit(
     remedies,
     alternatives: remedies
       .filter((r) => r.kind === 'alternative_benefit')
-      .map((r) => ({
-        id: r.id,
-        title: r.title,
-        reason: r.description,
-      })),
+      .map((r) => {
+        const relatedCode = r.id.startsWith('related-')
+          ? r.id.slice('related-'.length)
+          : null;
+        return {
+          id: relatedCode ?? r.id,
+          title: relatedCode
+            ? BENEFIT_CODE_LABEL[relatedCode] ?? relatedCode
+            : r.title,
+          reason: r.description,
+        };
+      }),
     procedure: mapPlanToProcedure(result),
     institution: resolveInstitutionFromText(result.plan?.institution) ?? 'zus_or_employer',
     amountNote: result.plan
-      ? `Okres (API): ${formatPlanDuration(result.plan)} · stawka ${result.plan.rate_percentage}% — nie decyzja ZUS.`
+      ? [
+          `Okres (API): ${formatPlanDuration(result.plan)}`,
+          formatPlanRate(result.plan)
+            ? `stawka/kwota ${formatPlanRate(result.plan)}`
+            : null,
+          'nie decyzja ZUS',
+        ]
+          .filter(Boolean)
+          .join(' · ')
       : null,
     sourceUrls: ['https://www.zus.pl'],
     legalBasisNote: [
       `FastAPI eligibility/check/${result.benefit_code} · rules_version ${result.rules_version}`,
       `Źródło danych: ${result.data_source}`,
       ...(result.plan?.legal_basis ?? []),
-      ...result.warnings,
     ]
       .filter(Boolean)
       .join(' · '),
     requiresVerification:
       result.status === 'requires_verification' || cautious,
+    warnings: result.warnings,
+    planMissing: result.plan == null,
   };
 }
 
@@ -107,7 +121,10 @@ function buildSummary(
     return result.unmet_conditions[0] ?? 'Jest przeszkoda — sprawdź możliwe rozwiązania.';
   }
   if (status === 'likely_eligible' && result.plan) {
-    return `Na podstawie API: ${formatPlanDuration(result.plan)} · ${result.plan.rate_percentage}%.`;
+    const rate = formatPlanRate(result.plan);
+    return rate
+      ? `Na podstawie API: ${formatPlanDuration(result.plan)} · ${rate}.`
+      : `Na podstawie API: ${formatPlanDuration(result.plan)}.`;
   }
   if (result.unmet_conditions[0]) return result.unmet_conditions[0];
   return result.benefit_name;
@@ -162,6 +179,7 @@ function buildConditions(result: EligibilityCheckResult): BenefitCondition[] {
 function mapSolutionToRemedy(
   solution: EligibilityCheckResult['possible_solutions'][number],
   index: number,
+  benefitId: string,
 ): BenefitRemedy {
   const kind = mapSolutionKind(solution.type);
   const related = solution.related_benefit_code?.trim();
@@ -179,19 +197,19 @@ function mapSolutionToRemedy(
       ...(related ? [`Powiązany kod: ${related}`] : []),
     ],
     ctaLabel: related
-      ? 'Sprawdź moje uprawnienia'
+      ? 'Sprawdź alternatywne świadczenie'
       : kind === 'alternative_benefit'
         ? 'Sprawdź możliwe rozwiązania'
         : kind === 'correct_data'
           ? 'Uzupełnij informacje'
           : 'Zobacz szczegóły',
     ctaHref: related
-      ? `/eligibility?benefit=${encodeURIComponent(related)}`
+      ? `/benefits/${encodeURIComponent(related)}`
       : kind === 'correct_data'
         ? '/onboarding'
         : kind === 'alternative_benefit'
-          ? `/benefits/${MATERNITY_ID}/solutions`
-          : `/benefits/${MATERNITY_ID}`,
+          ? `/benefits/${benefitId}/solutions`
+          : `/benefits/${benefitId}`,
   };
 }
 
@@ -242,38 +260,39 @@ function resolveNextStep(
   status: BenefitPresentationStatus,
   remedies: BenefitRemedy[],
   cautious: boolean,
+  benefitId: string,
 ): { label: string; href: string } {
-  const related = remedies.find((r) => r.ctaHref.includes('/eligibility?'));
+  const related = remedies.find((r) => r.kind === 'alternative_benefit');
   if (status === 'obstacle_with_options' && related) {
     return { label: related.ctaLabel, href: related.ctaHref };
   }
   if (cautious) {
     return {
       label: 'Zobacz ostrzeżenia i szczegóły',
-      href: `/eligibility?benefit=${encodeURIComponent('zasilek_w_wysokosci_zasilku_macierzynskiego')}`,
+      href: `/benefits/${benefitId}`,
     };
   }
   switch (status) {
     case 'likely_eligible':
       return {
         label: 'Zobacz, jak złożyć wniosek',
-        href: `/benefits/${MATERNITY_ID}`,
+        href: `/benefits/${benefitId}`,
       };
     case 'obstacle_with_options':
       return {
         label: 'Sprawdź możliwe rozwiązania',
-        href: `/benefits/${MATERNITY_ID}/solutions`,
+        href: `/benefits/${benefitId}/solutions`,
       };
     case 'insufficient_data':
       return { label: 'Uzupełnij informacje', href: '/onboarding' };
     case 'needs_review':
       return {
         label: remedies[0]?.ctaLabel ?? 'Zobacz szczegóły',
-        href: remedies[0]?.ctaHref ?? `/benefits/${MATERNITY_ID}`,
+        href: remedies[0]?.ctaHref ?? `/benefits/${benefitId}`,
       };
     case 'not_eligible':
     default:
-      return { label: 'Zobacz szczegóły oceny', href: `/benefits/${MATERNITY_ID}` };
+      return { label: 'Zobacz szczegóły oceny', href: `/benefits/${benefitId}` };
   }
 }
 

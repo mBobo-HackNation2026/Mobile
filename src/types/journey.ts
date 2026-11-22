@@ -30,6 +30,11 @@ export type EmploymentEndedReason =
   | 'upadlosc_likwidacja_smierc_pracodawcy'
   | 'naruszenie_prawa_wyrokiem_sadu';
 
+export type FosterCareType =
+  | 'rodzina_zastepcza'
+  | 'rodzina_zastepcza_zawodowa'
+  | 'wniosek_o_przysposobienie';
+
 /** Do zrobienia | oczekujące (np. na decyzję) | wykonane. */
 export type ChecklistStatus = 'todo' | 'pending' | 'done';
 
@@ -53,6 +58,32 @@ export interface ParentProfile {
   debtAmountZl: number | null;
   /** Powód ustania zatrudnienia/ubezpieczenia — gdy brak ubezpieczenia w dniu porodu. */
   employmentEndedReason: EmploymentEndedReason | null;
+  /** Pola warunkowe silnika (null = nie wiem / nie dotyczy). */
+  otherEmploymentSecured: boolean | null;
+  fatherInsured: boolean | null;
+  childAgeMonths: number | null;
+  isPregnant: boolean | null;
+  insuredDaysContinuous: number | null;
+  childHospitalizationWeeks: number | null;
+  gestationalWeekAtBirth: number | null;
+  birthWeightGrams: number | null;
+  postpartumWeeksElapsed: number | null;
+  isAdoptionOrFosterCare: boolean | null;
+  fosterCareType: FosterCareType | null;
+  childAgeYears: number | null;
+  schoolObligationDeferred: boolean | null;
+  zaZyciemCertificate: boolean | null;
+  fullDoseClaimedWithin21Days: boolean | null;
+  otherParentUsedParentalLeaveWeeks: number | null;
+  partTimeFractionDuringParentalLeave: number | null;
+  sicknessBenefitPeriodExhausted: boolean | null;
+  medicalPrognosisRecoveryPossible: boolean | null;
+  excludedFromRehabilitationBenefit: boolean | null;
+  isStillbirthOrInfantDeath: boolean | null;
+  daysSinceDeath: number | null;
+  daysSinceBurial: number | null;
+  isFullTimeEmployment: boolean | null;
+  employmentDurationMonths: number | null;
   onboardingCompleted: boolean;
   isDemo: boolean;
   demoScenarioId: string | null;

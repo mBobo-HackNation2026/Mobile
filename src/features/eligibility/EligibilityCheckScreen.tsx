@@ -17,6 +17,7 @@ import {
   BENEFIT_CODE_LABEL,
   DEFAULT_MATERNITY_BENEFIT_CODE,
   checkApiHealth,
+  isKnownBenefitCode,
   profileToEligibilityCheckRequest,
   type BenefitCode,
   type EligibilityCheckResult,
@@ -34,9 +35,12 @@ export function EligibilityCheckScreen() {
   const profile = useUserJourneyStore((s) => s.profile);
   const mutation = useEligibilityCheck();
 
-  const [benefitCode, setBenefitCode] = useState<BenefitCode>(
-    params.benefit?.trim() || DEFAULT_MATERNITY_BENEFIT_CODE,
-  );
+  const [benefitCode, setBenefitCode] = useState<BenefitCode>(() => {
+    const fromParam = params.benefit?.trim();
+    return fromParam && isKnownBenefitCode(fromParam)
+      ? fromParam
+      : DEFAULT_MATERNITY_BENEFIT_CODE;
+  });
   const [lastRequest, setLastRequest] = useState<MaternityLeaveEligibilityRequest | null>(
     null,
   );
@@ -52,8 +56,9 @@ export function EligibilityCheckScreen() {
   });
 
   useEffect(() => {
-    if (params.benefit?.trim()) {
-      setBenefitCode(params.benefit.trim());
+    const fromParam = params.benefit?.trim();
+    if (fromParam && isKnownBenefitCode(fromParam)) {
+      setBenefitCode(fromParam);
     }
   }, [params.benefit]);
 

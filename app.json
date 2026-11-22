@@ -43,7 +43,13 @@
           "color": "#1B6B75"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "eBobo używa lokalizacji, żeby pokazać ośrodki w Twojej okolicy (DEMO)."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

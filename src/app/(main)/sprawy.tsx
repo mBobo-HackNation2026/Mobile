@@ -33,12 +33,12 @@ export default function SprawyScreen() {
 
   if (!profile.onboardingCompleted) {
     return (
-      <Screen>
+      <Screen title="Moje sprawy">
         <EmptyState
           title="Brak spraw"
-          description="Najpierw oceń świadczenia — potem tu zobaczysz formalności."
-          actionLabel="Moje świadczenia"
-          onAction={() => router.push('/benefits')}
+          description="Najpierw uzupełnij ankietę — potem zobaczysz formalności i Mój plan."
+          actionLabel="Mój plan"
+          onAction={() => router.push('/home')}
         />
       </Screen>
     );
@@ -76,11 +76,9 @@ export default function SprawyScreen() {
   }));
 
   return (
-    <Screen
-      title="Moje sprawy"
-      subtitle="Terminy z ostrzeżeniami, niezbędnik po zmianie etapu oraz formalności do odhaczenia."
-    >
-      <DemoBanner message="Radar, niezbędnik i checklista pochodzą z API/mocka — nie są decyzją ZUS." />
+    <Screen title="Moje sprawy">
+      <DemoBanner message="Radar i checklista formalności — uzupełnienie Mój plan. Nie są decyzją ZUS." />
+      <Button label="Otwórz Mój plan" onPress={() => router.push('/home')} />
 
       <DeadlineRadarSection items={query.data.deadlineRadar} />
 

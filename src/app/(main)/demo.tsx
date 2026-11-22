@@ -19,7 +19,7 @@ export default function DemoScreen() {
       title="Tryb demo"
       subtitle="Wczytaj gotowy profil do hubu świadczeń albo uruchom 5 scenariuszy FastAPI."
     >
-      <DemoBanner message="Profile demo ładują mockowy hub. Ocena macierzyńskiego z FastAPI jest na ekranie «Ocena API»." />
+      <DemoBanner message="Profile demo to dane wejściowe. W trybie REST ocena 9 świadczeń idzie przez FastAPI — to nie jest decyzja ZUS." />
       <View style={styles.headerActions}>
         {activeId ? <Badge label={`Aktywny: ${activeId}`} tone="primary" /> : null}
         <Button

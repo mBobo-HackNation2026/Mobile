@@ -7,6 +7,11 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useCalendarStore } from '@/store/useCalendarStore';
+import { useDocumentAssistantStore } from '@/store/useDocumentAssistantStore';
+import { useDocumentsStore } from '@/store/useDocumentsStore';
+import { useFacilitiesStore } from '@/store/useFacilitiesStore';
+import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, spacing, typography } from '@/theme';
 
 /** Sesja anonimowa / mObywatel DEMO — nie jest prawdziwym logowaniem urzędowym. */
@@ -21,8 +26,15 @@ export function SessionCard() {
   const sessionExpiredNotice = useAuthStore((s) => s.sessionExpiredNotice);
   const loginMobywatel = useAuthStore((s) => s.loginMobywatel);
   const startNewAnonymousSession = useAuthStore((s) => s.startNewAnonymousSession);
+  const logout = useAuthStore((s) => s.logout);
   const clearSessionExpiredNotice = useAuthStore((s) => s.clearSessionExpiredNotice);
+  const resetDemo = useUserJourneyStore((s) => s.resetDemo);
+  const clearCalendarData = useCalendarStore((s) => s.clearCalendarData);
+  const clearDocuments = useDocumentsStore((s) => s.clearDocuments);
+  const clearDocAssistant = useDocumentAssistantStore((s) => s.clearOverrides);
+  const clearFavorites = useFacilitiesStore((s) => s.clearFavorites);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const onLogin = async () => {
     setLoginError(null);
@@ -104,6 +116,31 @@ export function SessionCard() {
             Zalogowano demonstracyjnie. Token zastąpiono; ten sam user_id powinien pozostać.
           </Text>
         )}
+        <Button
+          label={loggingOut ? 'Wylogowuję…' : 'Wyloguj i wyczyść dane lokalne'}
+          variant="secondary"
+          disabled={loggingOut}
+          onPress={() => {
+            setLoggingOut(true);
+            void (async () => {
+              try {
+                await logout();
+                resetDemo();
+                clearCalendarData();
+                clearDocuments();
+                clearDocAssistant();
+                clearFavorites();
+                await queryClient.clear();
+              } catch (error) {
+                setLoginError(
+                  apiErrorMessage(error, 'Wylogowanie częściowe — wyczyść profil ręcznie.'),
+                );
+              } finally {
+                setLoggingOut(false);
+              }
+            })();
+          }}
+        />
         {!status || sessionExpiredNotice ? (
           <Button
             label="Nowa sesja anonimowa"
