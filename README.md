@@ -1,59 +1,64 @@
 # eBobo
 
-Frontend demonstracyjny HackNation 2026 / wyzwanie ZUS „Zasiłkowy Przewodnik Przyszłego Rodzica”.
+**Zasiłkowy Przewodnik Przyszłego Rodzica** — HackNation 2026 / wyzwanie ZUS.
 
-eBobo prowadzi rodzica przez formalności: **co przysługuje, ile, kiedy i gdzie to załatwić** — bez trackera rozwoju dziecka.
+> Powiedz nam, jaka jest Twoja sytuacja — pokażemy, jakie świadczenia mogą Ci przysługiwać, ile możesz otrzymać, czego brakuje i co zrobić dalej.
+
+Ocena jest **informacyjna** i nie stanowi decyzji ZUS.
 
 ## Stack
 
 Expo SDK 58 · React Native · React Native Web · TypeScript strict · Expo Router · Zustand · TanStack Query · React Hook Form · Zod · date-fns
 
-Backend (osobny serwis FastAPI) nie jest częścią tego repozytorium.
+Backend FastAPI jest **osobnym serwisem** (nie w tym repo).
 
-## Uruchomienie (demo Web)
+## Uruchomienie (Web)
 
 ```bash
 npm install
-cp .env.example .env   # ustaw EXPO_PUBLIC_API_MODE=rest oraz URL FastAPI/ngrok
+cp .env.example .env
+# EXPO_PUBLIC_API_MODE=rest
+# EXPO_PUBLIC_API_URL=https://<stabilny-backend>
 npx expo start --web --port 8081
 ```
 
-Sprawdź:
+- App: `http://localhost:8081`
+- Health (Web proxy): `http://localhost:8081/zus-proxy/api/v1/health`
 
-- `http://localhost:8081`
-- `http://localhost:8081/zus-proxy/api/v1/health` (Web — proxy Metro omija CORS)
-
-### Mock vs FastAPI
+### Zmienne
 
 | Zmienna | Opis |
 |---|---|
-| `EXPO_PUBLIC_API_MODE` | `mock` albo `rest` |
-| `EXPO_PUBLIC_API_URL` | URL FastAPI (preferowane) |
-| `EXPO_PUBLIC_API_BASE_URL` | alias |
+| `EXPO_PUBLIC_API_MODE` | `mock` \| `rest` |
+| `EXPO_PUBLIC_API_URL` | URL FastAPI |
 
-W trybie **rest** (Web): klient woła `/zus-proxy/...` → Metro → FastAPI.  
-Eligibility / calculate / compare: **bez cichego mocka**. Dokumenty/knowledge: jawny fallback mock.
+W `rest`: eligibility / calculate / compare **bez** cichego mocka. Dokumenty: jawny fallback.
+
+**Nie commituj** `.env` z sekretami (np. kluczami AI).
 
 ## Nawigacja
 
-**Plan | Kalendarz | Świadczenia | Mapa | Profil**
+**Plan · Sprawy · Świadczenia · Kalkulator · Profil**
 
 | Trasa | Rola |
 |---|---|
-| `/home` | **Mój plan** — lokalna oś czasu DEMO (`buildParentPlan`) |
-| `/sprawy` | Formalności: checklista z **FastAPI** + uzupełnienie lokalne DEMO |
-| `/plan` | Ta sama checklista z filtrami |
-| `/benefits` | 9 świadczeń — `POST /eligibility/check/{code}` |
-| `/calculator` | `calculate/{code}` + `compare/urlop-rodzicielski` |
-| `/calendar` | Terminy z planu lokalnego + (gdy ISO) z API + pine mapy |
-| `/map` | Placówki DEMO / OSM |
-| `/demo` | Profile wejściowe DEMO (daty względne) |
+| `/benefits` | Hub 9 świadczeń (domyślny po onboardingu) |
+| `/benefits/[id]` | Wynik → kwota → dokumenty → oficjalne linki |
+| `/calculator?benefit=` | Calculate + compare (kontekst świadczenia) |
+| `/sample-cases` | **Sprawdź przykładową sprawę** (syntetyczne, bez PDF ZUS) |
+| `/help` | Organizacje charytatywne + odpis aktu gov.pl |
+| `/sprawy` | Checklista formalności |
+| `/zus` | Symulacja danych ZUS |
+| `/documents` | Upload PDF → analyze (gdy BE działa) |
 
-## Źródła danych (ważne)
+## Demo dla jury
 
-1. **FastAPI** — ocena uprawnień, kwoty, procedury wniosków (prawo / silnik).
-2. **Plan lokalny DEMO** — checklista zdrowotna i orientacyjne terminy (`/home`); nie jest decyzją ZUS.
-3. **Mapa / ZUS / PDF / mObywatel** — integracje demonstracyjne, oznaczone w UI.
+1. Welcome → „Sprawdź przykładową sprawę” **lub** ankieta.
+2. Wybierz S1 / S2 → oceń świadczenia → oblicz kwotę → eZUS/pracodawca.
+3. `/help` przy stratach / wcześniakach.
+4. Paczka konkursowa: `SUBMISSION.md`, `ETAP16_EXCELLENCE_FINAL_REPORT.md`.
+
+**Chronione PDF spraw ZUS nie są w repozytorium** (zakaz rozpowszechniania).
 
 ## Skrypty
 
@@ -61,13 +66,16 @@ Eligibility / calculate / compare: **bez cichego mocka**. Dokumenty/knowledge: j
 npm run typecheck
 npm run test:regression
 npm run export:web
+npm run deploy:web          # wymaga skonfigurowanego EAS
 ```
 
-## Ścieżka demo (jury)
+## Dokumentacja
 
-1. Welcome → gość → `/demo` → profil (np. pracownica w ciąży).
-2. `/benefits` → szczegóły macierzyńskiego.
-3. `/calculator` → kwota + (dla rodziców) porównanie 3 wariantów.
-4. `/home` + `/sprawy` — plan lokalny vs formalności API.
+- `SUBMISSION.md` — paczka oddania
+- `docs/PRESENTATION_OUTLINE.md` — slajdy ≤10
+- `src/services/api/CONTRACT.md` — endpointy
+- Raporty `ETAP*.md`, `HACKATHON_2026_FINAL_COMPLIANCE_AUDIT.md`
 
-Wszystkie oceny i kwoty to **symulacja / wynik API** — nie decyzja ZUS.
+## AI
+
+`POST /legal-advisor/explain/{benefit_code}` — wyjaśnienie wyniku silnika. UI oznacza, że AI nie przyznaje świadczenia.
