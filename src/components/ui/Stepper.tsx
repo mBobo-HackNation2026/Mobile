@@ -44,9 +44,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   track: {
-    height: 8,
+    height: 6,
     borderRadius: radii.full,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.primarySoft,
     overflow: 'hidden',
   },
   fill: {

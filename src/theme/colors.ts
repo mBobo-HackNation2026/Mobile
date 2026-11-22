@@ -1,23 +1,21 @@
 import { palette } from '@/theme/palette';
 
 /**
- * Semantyczne tokeny UI.
- * Zmieniaj kolory marki w `palette.ts` — tu tylko mapowanie znaczeń.
+ * Semantyczne tokeny UI (Etap 18).
+ * Kolory marki zmieniaj w `palette.ts`.
  */
 export const colors = {
   background: palette.canvas,
   backgroundWarm: palette.canvasWarm,
   surface: palette.surface,
   surfaceMuted: palette.surfaceMuted,
-  /**
-   * Tło sticky headera — ciepły, delikatny ton (nie canvas, nie pure white).
-   * Spójny z notchem.
-   */
+  surfaceElevated: palette.surfaceElevated,
   header: palette.header,
   border: palette.line,
   borderStrong: palette.lineStrong,
 
   text: palette.ink,
+  textPrimary: palette.ink,
   textSecondary: palette.inkSecondary,
   textMuted: palette.inkMuted,
   textInverse: palette.inkInverse,
@@ -27,12 +25,14 @@ export const colors = {
   primarySoft: palette.brandSoft,
   primaryMuted: palette.brandMuted,
 
-  /** Ciepły akcent UI (pasek headera). */
   highlight: palette.accent,
   highlightSoft: palette.accentSoft,
 
   accent: palette.success,
   accentSoft: palette.successSoft,
+
+  success: palette.success,
+  successSoft: palette.successSoft,
 
   zus: palette.zus,
   zusDark: palette.zusDark,
@@ -49,6 +49,8 @@ export const colors = {
   warningSoft: palette.warningSoft,
   danger: palette.danger,
   dangerSoft: palette.dangerSoft,
+  error: palette.danger,
+  errorSoft: palette.dangerSoft,
   info: palette.info,
   infoSoft: palette.infoSoft,
 

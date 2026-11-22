@@ -9,7 +9,12 @@ interface ChoiceChipProps {
   description?: string;
 }
 
-export function ChoiceChip({ label, selected = false, onPress, description }: ChoiceChipProps) {
+export function ChoiceChip({
+  label,
+  selected = false,
+  onPress,
+  description,
+}: ChoiceChipProps) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -24,7 +29,9 @@ export function ChoiceChip({ label, selected = false, onPress, description }: Ch
     >
       <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
       {description ? (
-        <Text style={[styles.description, selected && styles.descriptionSelected]}>
+        <Text
+          style={[styles.description, selected && styles.descriptionSelected]}
+        >
           {description}
         </Text>
       ) : null}
@@ -35,11 +42,11 @@ export function ChoiceChip({ label, selected = false, onPress, description }: Ch
 const styles = StyleSheet.create({
   base: {
     minHeight: layout.touchMin,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.borderStrong,
     backgroundColor: colors.surface,
     borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.mdPlus,
     paddingVertical: spacing.sm,
     gap: spacing.xxs,
   },
@@ -48,7 +55,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   pressed: {
-    opacity: 0.92,
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }],
   },
   label: {
     ...typography.bodyStrong,

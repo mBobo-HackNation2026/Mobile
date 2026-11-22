@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 
 interface EmptyStateProps {
   title: string;
@@ -10,9 +10,15 @@ interface EmptyStateProps {
   onAction?: () => void;
 }
 
-export function EmptyState({ title, description, actionLabel, onAction }: EmptyStateProps) {
+export function EmptyState({
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: EmptyStateProps) {
   return (
-    <View style={styles.wrap}>
+    <View style={styles.wrap} accessibilityRole="summary">
+      <View style={styles.mark} accessibilityElementsHidden />
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
       {actionLabel && onAction ? (
@@ -26,7 +32,19 @@ const styles = StyleSheet.create({
   wrap: {
     gap: spacing.sm,
     paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.md,
     alignItems: 'flex-start',
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  mark: {
+    width: 36,
+    height: 4,
+    borderRadius: radii.full,
+    backgroundColor: colors.primarySoft,
+    marginBottom: spacing.xxs,
   },
   title: {
     ...typography.h3,

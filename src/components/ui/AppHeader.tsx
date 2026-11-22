@@ -122,15 +122,17 @@ const styles = StyleSheet.create({
   shell: {
     backgroundColor: colors.header,
     zIndex: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
     ...Platform.select({
       ios: {
         shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.35,
-        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
       },
       android: {
-        elevation: 2,
+        elevation: 1,
       },
       default: {},
     }),
@@ -195,7 +197,7 @@ const styles = StyleSheet.create({
   //   color: colors.textMuted,
   // },
   progressTrack: {
-    height: 3,
+    height: 2,
     width: '100%',
     backgroundColor: colors.primarySoft,
     overflow: 'hidden',

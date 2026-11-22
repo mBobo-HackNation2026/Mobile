@@ -31,8 +31,8 @@ export function HelpSupportScreen() {
       <Card style={styles.calm}>
         <Text style={styles.lead}>
           Jeśli jesteś w trudnej sytuacji, nie musisz przechodzić tego sama / sam.
-          Poniżej są organizacje o charakterze pomocowym oraz oficjalna usługa
-          uzyskania odpisu aktu. eBobo nie zastępuje wsparcia specjalistycznego.
+          Poniżej znajdziesz spokojne wskazówki i organizacje pomocowe. eBobo nie
+          zastępuje wsparcia specjalistycznego.
         </Text>
       </Card>
 
@@ -104,7 +104,7 @@ function audienceLabel(a: CharityAudience): string {
 
 const styles = StyleSheet.create({
   calm: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.backgroundWarm,
     borderColor: colors.border,
     gap: spacing.sm,
   },

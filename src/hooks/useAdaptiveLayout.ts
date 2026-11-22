@@ -24,7 +24,10 @@ export function useAdaptiveLayout() {
     showBottomNav: mode === 'compact',
     showSidebar: mode !== 'compact',
     sidebarCollapsed: mode === 'medium',
-    contentMaxWidth: layout.contentMaxWidth,
+    contentMaxWidth:
+      mode === 'expanded'
+        ? layout.contentMaxWidthWide
+        : layout.contentMaxWidth,
     columns: mode === 'expanded' ? 2 : 1,
   };
 }

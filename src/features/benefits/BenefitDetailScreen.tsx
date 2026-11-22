@@ -131,7 +131,7 @@ export function BenefitDetailScreen() {
       </View>
 
       {/* 1. Twój wynik */}
-      <Card>
+      <Card elevated>
         <Text style={styles.section}>Twój wynik</Text>
         <Text style={styles.body}>{benefit.rationale}</Text>
         {benefit.warnings && benefit.warnings.length > 0

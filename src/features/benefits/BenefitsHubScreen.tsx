@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { FileCheck, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { FileCheck, ChevronDown, ChevronUp, Info } from 'lucide-react-native';
 
 import { ApiHealthBanner } from '@/components/ui/ApiHealthBanner';
 import { Badge } from '@/components/ui/Badge';
@@ -77,11 +77,11 @@ export function BenefitsHubScreen() {
     return (
       <Screen title="Twoje świadczenia" back={false}>
         <ApiHealthBanner />
-        <Card style={styles.loadingCard}>
-          <ActivityIndicator color={colors.primary} />
+        <Card elevated style={styles.loadingCard}>
+          <ActivityIndicator color={colors.primary} size="large" />
           <Text style={styles.loadingTitle}>Sprawdzamy Twoje możliwości</Text>
           <Text style={styles.muted}>
-            Analizujemy świadczenia na podstawie podanych informacji…
+            Analizujemy świadczenia na podstawie podanych informacji.
           </Text>
         </Card>
       </Screen>
@@ -113,6 +113,11 @@ export function BenefitsHubScreen() {
   const primaryItems = PRIMARY_STATUSES.flatMap((s) => grouped[s]);
   const remainingItems = REMAINING_STATUSES.flatMap((s) => grouped[s]);
   const showUnchecked = counts.unchecked > 0;
+  const needsInfoItems = [
+    ...grouped.obstacle_with_options,
+    ...grouped.insufficient_data,
+    ...grouped.needs_review,
+  ];
 
   return (
     <Screen title="Twoje świadczenia" back={false}>
@@ -120,7 +125,7 @@ export function BenefitsHubScreen() {
 
       <View style={styles.hero}>
         <Text style={styles.heroLead}>
-          Sprawdziliśmy możliwości na podstawie podanych przez Ciebie informacji.
+          Co może Ci przysługiwać — i co zrobić dalej.
         </Text>
       </View>
 
@@ -154,34 +159,43 @@ export function BenefitsHubScreen() {
       </View>
 
       {evaluation.missingInputs.length > 0 ? (
-        <Card style={styles.missingCard}>
-          <Badge label="Potrzebujemy informacji" tone="primary" />
-          <Text style={styles.cardTitle}>Uzupełnij dane, żeby dokończyć ocenę</Text>
+        <Card elevated style={styles.missingCard}>
+          <View style={styles.missingHeader}>
+            <Info size={18} color={colors.primary} strokeWidth={2.2} />
+            <Badge label="Potrzebujemy informacji" tone="primary" />
+          </View>
+          <Text style={styles.cardTitle}>
+            Uzupełnij dane, żeby dokończyć ocenę
+          </Text>
           <Text style={styles.body} numberOfLines={2}>
-            Brakuje: {evaluation.missingInputs.join(', ')}.
+            Brakuje kilku informacji do dokładniejszej oceny.
           </Text>
           <Button
-            label="Uzupełnij informacje"
+            label="Uzupełnij dane"
             onPress={() => router.push('/complete-data')}
           />
         </Card>
       ) : null}
 
-      {primaryItems.length > 0 ? (
+      {grouped.likely_eligible.length > 0 ? (
         <View style={styles.section}>
-          {counts.likely > 0 ? (
-            <Text style={styles.sectionTitle}>Może Ci przysługiwać</Text>
-          ) : (
-            <Text style={styles.sectionTitle}>Do sprawdzenia</Text>
-          )}
+          <Text style={styles.sectionTitle}>Może Ci przysługiwać</Text>
+          <Text style={styles.sectionLead}>
+            Na podstawie podanych informacji spełniasz sprawdzone warunki.
+          </Text>
           {grouped.likely_eligible.map((benefit) => (
             <BenefitCard key={benefit.id} benefit={benefit} priority />
           ))}
-          {[
-            ...grouped.obstacle_with_options,
-            ...grouped.insufficient_data,
-            ...grouped.needs_review,
-          ].map((benefit) => (
+        </View>
+      ) : null}
+
+      {needsInfoItems.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Wymaga jeszcze informacji</Text>
+          <Text style={styles.sectionLead}>
+            Potrzebujemy kilku odpowiedzi, żeby dokończyć ocenę.
+          </Text>
+          {needsInfoItems.map((benefit) => (
             <BenefitCard key={benefit.id} benefit={benefit} />
           ))}
         </View>
@@ -203,8 +217,8 @@ export function BenefitsHubScreen() {
               <Text style={styles.sectionTitle}>Pozostałe świadczenia</Text>
               <Text style={styles.remainingHint}>
                 {remainingItems.length}{' '}
-                {remainingItems.length === 1 ? 'pozycja' : 'pozycje'} · warunki obecnie
-                niespełnione
+                {remainingItems.length === 1 ? 'pozycja' : 'pozycje'} · warunki
+                obecnie niespełnione
               </Text>
             </View>
             {remainingOpen ? (
@@ -286,13 +300,14 @@ function BenefitCard({
   const completeData =
     needsInfo && benefit.nextStepHref.includes('complete-data');
   const primaryLabel = completeData
-    ? 'Uzupełnij informacje'
+    ? 'Uzupełnij dane'
     : 'Zobacz szczegóły';
 
   const primaryHref = (completeData ? benefit.nextStepHref : detailHref) as Href;
 
   return (
     <Card
+      elevated={priority}
       style={{
         ...styles.benefitCard,
         ...(priority ? styles.benefitCardPriority : null),
@@ -300,10 +315,12 @@ function BenefitCard({
       }}
     >
       <View style={styles.cardTop}>
-        <View style={styles.iconBadge}>
+        <View
+          style={[styles.iconBadge, priority && styles.iconBadgePriority]}
+        >
           <FileCheck
             size={18}
-            color={priority ? colors.primary : colors.textMuted}
+            color={priority ? colors.primaryHover : colors.textMuted}
             strokeWidth={2.2}
           />
         </View>
@@ -320,11 +337,13 @@ function BenefitCard({
         label={primaryLabel}
         onPress={() => router.push(primaryHref)}
         fullWidth
-        variant={priority ? 'primary' : needsInfo ? 'primary' : 'secondary'}
+        variant={priority || needsInfo ? 'primary' : 'secondary'}
       />
-      <Link href={detailHref}>
-        <Text style={styles.link}>Szczegóły →</Text>
-      </Link>
+      {!completeData ? null : (
+        <Link href={detailHref}>
+          <Text style={styles.link}>Szczegóły →</Text>
+        </Link>
+      )}
     </Card>
   );
 }
@@ -346,25 +365,25 @@ function groupBenefits(benefits: BenefitAssessment[]) {
 
 const toneStyles = StyleSheet.create({
   likely: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
+    backgroundColor: colors.successSoft,
+    borderColor: 'transparent',
   },
   info: {
     backgroundColor: colors.warningSoft,
-    borderColor: colors.warning,
+    borderColor: 'transparent',
   },
   muted: {
     backgroundColor: colors.surfaceMuted,
-    borderColor: colors.border,
+    borderColor: 'transparent',
   },
   error: {
     backgroundColor: colors.dangerSoft,
-    borderColor: colors.danger,
+    borderColor: 'transparent',
   },
 });
 
 const toneValueStyles = StyleSheet.create({
-  likely: { color: colors.accent },
+  likely: { color: colors.success },
   info: { color: colors.warning },
   muted: { color: colors.textSecondary },
   error: { color: colors.danger },
@@ -373,7 +392,6 @@ const toneValueStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   hero: {
     gap: spacing.xxs,
-    marginBottom: spacing.xs,
   },
   heroLead: {
     ...typography.body,
@@ -383,7 +401,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
-    marginBottom: spacing.sm,
   },
   chip: {
     flexGrow: 1,
@@ -398,8 +415,8 @@ const styles = StyleSheet.create({
   },
   chipValue: {
     ...typography.h3,
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 22,
+    lineHeight: 26,
   },
   chipLabel: {
     ...typography.caption,
@@ -407,11 +424,16 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: spacing.sm,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
   sectionTitle: {
     ...typography.h3,
     color: colors.text,
+  },
+  sectionLead: {
+    ...typography.small,
+    color: colors.textMuted,
+    marginBottom: spacing.xxs,
   },
   remainingToggle: {
     flexDirection: 'row',
@@ -433,14 +455,14 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   benefitCard: {
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   benefitCardPriority: {
-    borderColor: colors.primaryMuted,
+    borderColor: colors.primarySoft,
     backgroundColor: colors.surface,
   },
   benefitCardSubdued: {
-    opacity: 0.92,
+    opacity: 0.9,
     backgroundColor: colors.surfaceMuted,
   },
   cardTop: {
@@ -450,40 +472,49 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   iconBadge: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.surfaceMuted,
+  },
+  iconBadgePriority: {
     backgroundColor: colors.primarySoft,
   },
   cardTitle: {
     ...typography.h3,
     color: colors.text,
-    marginTop: spacing.xs,
   },
   body: {
     ...typography.body,
     color: colors.textSecondary,
-    marginBottom: spacing.xs,
   },
   link: {
     ...typography.bodyStrong,
     color: colors.primary,
-    marginTop: spacing.xs,
     minHeight: 44,
     paddingTop: spacing.xs,
   },
-  muted: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+  muted: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
   loadingCard: {
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     paddingVertical: spacing.xl,
   },
   loadingTitle: {
-    ...typography.h3,
+    ...typography.h2,
     color: colors.text,
     textAlign: 'center',
   },
-  missingCard: { gap: spacing.xs },
+  missingCard: { gap: spacing.sm },
+  missingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
 });

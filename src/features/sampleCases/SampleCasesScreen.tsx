@@ -69,11 +69,10 @@ export function SampleCasesScreen() {
       <DemoBanner message={SAMPLE_CASE_LEGAL_NOTE} />
       <LegalDisclaimer />
 
-      <Card style={styles.intro}>
+      <Card elevated style={styles.intro}>
         <Text style={styles.body}>
-          Wybierz przypadek, sprawdź dane wejściowe, uruchom ocenę 9 świadczeń i
-          kalkulator. Wynik silnika porównaj z referencją organizatora poza
-          aplikacją — nie rozpowszechniamy chronionych dokumentów spraw.
+          Wybierz przykładową sytuację i zobacz, jak eBobo ocenia świadczenia.
+          To syntetyczne profile demonstracyjne — nie oryginalne dokumenty ZUS.
         </Text>
         <Button
           label="Wgraj własny PDF (analiza)"

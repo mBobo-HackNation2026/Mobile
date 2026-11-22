@@ -10,18 +10,22 @@ const fontDisplay = Platform.select({
   default: 'System',
 });
 
+/**
+ * Hierarchia typografii Etap 18 — max kilka poziomów.
+ * display/h1: marka i hero; h2: ekran; h3: sekcja/karta; body/small/caption.
+ */
 export const typography = {
   display: {
     fontFamily: fontDisplay,
-    fontSize: 36,
-    lineHeight: 44,
+    fontSize: 34,
+    lineHeight: 42,
     fontWeight: '600',
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
   h1: {
     fontFamily: fontDisplay,
-    fontSize: 28,
-    lineHeight: 36,
+    fontSize: 26,
+    lineHeight: 34,
     fontWeight: '600',
     letterSpacing: -0.3,
   },
@@ -33,9 +37,9 @@ export const typography = {
   },
   h3: {
     fontFamily: fontSans,
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: '700',
+    fontSize: 17,
+    lineHeight: 24,
+    fontWeight: '600',
   },
   body: {
     fontFamily: fontSans,
@@ -60,12 +64,19 @@ export const typography = {
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '500',
-    letterSpacing: 0.2,
+    letterSpacing: 0.15,
   },
   button: {
     fontFamily: fontSans,
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '600',
+  },
+  amount: {
+    fontFamily: fontSans,
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '700',
+    letterSpacing: -0.4,
   },
 } as const satisfies Record<string, TextStyle>;

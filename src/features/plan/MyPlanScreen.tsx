@@ -150,7 +150,7 @@ export function MyPlanScreen() {
           <View style={styles.block}>
             <Text style={styles.blockTitle}>Co teraz?</Text>
             {focus ? (
-              <Card style={styles.focusCard}>
+              <Card elevated style={styles.focusCard}>
                 <Badge
                   label={
                     focus.source === 'missing_data'
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   situationCard: {
     backgroundColor: colors.primarySoft,
-    borderColor: colors.primaryMuted,
+    borderColor: colors.primarySoft,
     gap: spacing.xs,
   },
   situationStage: { ...typography.h2, color: colors.text },
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   focusCard: {
     gap: spacing.sm,
-    borderColor: colors.primaryMuted,
+    borderColor: colors.primarySoft,
     borderWidth: 1.5,
   },
   focusTitle: { ...typography.h2, color: colors.text },

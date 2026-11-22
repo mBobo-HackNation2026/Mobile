@@ -3,8 +3,12 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { mainNavItems } from '@/components/layout/navItems';
-import { colors, radii, spacing, typography } from '@/theme';
+import { colors, layout, radii, spacing, typography } from '@/theme';
 
+/**
+ * Premium Bottom Navigation (Etap 18).
+ * Świadczenia = centrum; aktywny stan = miękka pastylka (bez FAB).
+ */
 export function BottomNav() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
@@ -35,30 +39,22 @@ export function BottomNav() {
             >
               <View
                 style={[
-                  styles.itemInner,
-                  active && styles.itemInnerActive,
-                  active && isBenefits && styles.itemInnerBenefits,
+                  styles.pill,
+                  active && styles.pillActive,
+                  active && isBenefits && styles.pillBenefits,
                 ]}
               >
-                <View
-                  style={[
-                    styles.iconWrap,
-                    active && styles.iconWrapActive,
-                    active && isBenefits && styles.iconWrapBenefits,
-                  ]}
-                >
-                  <Icon
-                    size={20}
-                    color={
-                      active
-                        ? isBenefits
-                          ? colors.textInverse
-                          : colors.primary
-                        : colors.textMuted
-                    }
-                    strokeWidth={active ? 2.4 : 2}
-                  />
-                </View>
+                <Icon
+                  size={isBenefits && active ? 21 : 20}
+                  color={
+                    active
+                      ? isBenefits
+                        ? colors.primaryHover
+                        : colors.primary
+                      : colors.textMuted
+                  }
+                  strokeWidth={active ? 2.35 : 1.9}
+                />
                 <Text
                   style={[
                     styles.label,
@@ -82,72 +78,59 @@ const styles = StyleSheet.create({
   wrap: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xs,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
     alignItems: 'center',
   },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    maxWidth: 520,
+    maxWidth: layout.navMaxWidth,
     backgroundColor: colors.surface,
     borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.xxs + 2,
     paddingHorizontal: spacing.xxs,
     ...Platform.select({
       ios: {
         shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.12,
-        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.1,
+        shadowRadius: 16,
       },
-      android: {
-        elevation: 8,
-      },
+      android: { elevation: 6 },
       default: {
         shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.12,
-        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.1,
+        shadowRadius: 16,
       },
     }),
   },
   item: {
     flex: 1,
-    minHeight: 52,
+    minHeight: layout.touchMin + 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  itemInner: {
+  pill: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
-    paddingVertical: spacing.xxs,
+    paddingVertical: spacing.xxs + 2,
     paddingHorizontal: spacing.xs,
     borderRadius: radii.lg,
-    minWidth: 56,
+    minWidth: 58,
     minHeight: 48,
   },
-  itemInnerActive: {
+  pillActive: {
     backgroundColor: colors.primarySoft,
   },
-  itemInnerBenefits: {
+  pillBenefits: {
     backgroundColor: colors.primarySoft,
-  },
-  iconWrap: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.full,
-  },
-  iconWrapActive: {
-    backgroundColor: colors.surface,
-  },
-  iconWrapBenefits: {
-    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 107, 102, 0.18)',
   },
   label: {
     ...typography.caption,
@@ -156,7 +139,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
   labelActive: {
-    color: colors.primaryHover,
+    color: colors.primary,
     fontWeight: '700',
   },
   labelBenefits: {

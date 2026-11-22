@@ -88,20 +88,19 @@ export function CalculatorResultHero({
 }) {
   if (loading) {
     return (
-      <Card style={styles.heroCard}>
-        <Text style={styles.heroLoading}>Liczymy kwotę w silniku…</Text>
+      <Card elevated style={styles.heroCard}>
+        <Text style={styles.heroLoading}>Liczymy kwotę…</Text>
       </Card>
     );
   }
 
   if (empty || !result) {
     return (
-      <Card style={styles.heroEmpty}>
+      <Card elevated style={styles.heroEmpty}>
         <Badge label="Oczekuje na obliczenie" tone="neutral" />
         <Text style={styles.heroEmptyTitle}>Twoje świadczenie pojawi się tutaj</Text>
         <Text style={styles.heroEmptyBody}>
-          Uzupełnij dane i naciśnij „Policz”. Kwota pochodzi wyłącznie z silnika — bez
-          lokalnych przeliczeń.
+          Uzupełnij dane i naciśnij „Policz”. Oto miejsce na Twoje wyliczenie.
         </Text>
       </Card>
     );
@@ -122,15 +121,18 @@ export function CalculatorResultHero({
   const rate = primaryRateFromBreakdown(result.rate_breakdown);
 
   return (
-    <Card style={calcDefect ? styles.heroCardWarn : styles.heroCard}>
+    <Card
+      elevated
+      style={calcDefect ? styles.heroCardWarn : styles.heroCard}
+    >
       <View style={styles.heroTop}>
         <Badge
           label={
             calcDefect
-              ? 'Szacunek — możliwy problem wyliczenia'
+              ? 'Szacunek — sprawdź uwagi'
               : ambiguousZero
                 ? 'Wymiar nieustalony'
-                : 'Szacunek z silnika'
+                : 'Oto Twoje wyliczenie'
           }
           tone={calcDefect || ambiguousZero ? 'warning' : 'success'}
         />
@@ -482,7 +484,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   heroAmount: {
-    ...typography.display,
+    ...typography.amount,
     color: colors.text,
     marginVertical: spacing.xs,
   },

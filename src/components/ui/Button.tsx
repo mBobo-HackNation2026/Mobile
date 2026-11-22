@@ -58,8 +58,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   pressed: {
-    opacity: 0.9,
-    transform: [{ translateY: 1 }],
+    opacity: 0.88,
+    transform: [{ scale: 0.985 }],
   },
   disabled: {
     opacity: 0.45,
@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
 const variantStyles = StyleSheet.create<Record<Variant, ViewStyle>>({
   primary: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   secondary: {
     backgroundColor: colors.surface,

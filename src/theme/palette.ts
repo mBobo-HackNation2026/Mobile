@@ -1,71 +1,66 @@
 /**
- * Paleta eBobo — jedyne miejsce do szybkiej zmiany kolorów marki.
- * Tokeny semantyczne w `colors.ts` budują się z tych wartości.
- *
- * Kierunek: chłodny teal + ciepły bursztyn (akcent UI) + zieleń ZUS (świadczenia).
- * Później można podmienić same hexy poniżej bez ruszania ekranów.
+ * Paleta eBobo — Premium Soft Minimal (Etap 18).
+ * Spokojny teal + ciepła biel + stonowane szarości.
+ * Semantyka w `colors.ts`.
  */
 export const palette = {
-  /** Główny kolor marki (nawigacja, linki, focus). */
-  brand: '#1B6B75',
-  brandDark: '#134F56',
-  brandMuted: '#5A9AA3',
-  brandSoft: '#D8EEF1',
-  brandWash: '#EAF5F6',
-  /** Delikatnie inny od canvasu — chrome / sticky header. */
-  header: '#F1EEE7',
+  /** Główny kolor marki — głęboki, spokojny teal. */
+  brand: '#1A6B66',
+  brandDark: '#134F4C',
+  brandMuted: '#5B9A94',
+  brandSoft: '#E4F2F0',
+  brandWash: '#F0F7F6',
 
-  /** Akcent UI (pasek progresu, wyróżnienia). */
-  accent: '#D4A017',
-  accentDark: '#A67B0A',
-  accentSoft: '#FBF3D9',
+  /** Chrome / sticky header — ciepła, niemal biała powierzchnia. */
+  header: '#F7F5F1',
 
-  /** Status „sukces” / wykonane (nie mylić z zielenią ZUS). */
-  success: '#2F6B4F',
-  successSoft: '#E3F0E9',
+  /** Subtelny akcent UI (pasek progresu) — ciepły bursztyn, oszczędnie. */
+  accent: '#C4922A',
+  accentDark: '#8F6A16',
+  accentSoft: '#F8F1E0',
 
-  /** Zieleń identyfikacji ZUS — CTA świadczeń. */
+  /** Status sukces / „może przysługiwać”. */
+  success: '#2D6A4F',
+  successSoft: '#E7F2EC',
+
+  /** Zieleń ZUS — tylko oznaczenia instytucjonalne / CTA świadczeń. */
   zus: '#009639',
   zusDark: '#007A2E',
   zusSoft: '#E6F7ED',
-  /** Granat — kategoria zadań ZUS / zasiłki (brief). */
-  zusNavy: '#0D3B66',
-  zusNavySoft: '#E3ECF4',
+  zusNavy: '#1A4A66',
+  zusNavySoft: '#E8F0F5',
 
-  /** Kategorie planu (zdrowie / urząd). */
-  health: '#2F6B4F',
-  healthSoft: '#E3F0E9',
-  admin: '#5A6B75',
-  adminSoft: '#E8ECF0',
+  health: '#2D6A4F',
+  healthSoft: '#E7F2EC',
+  admin: '#5C6B73',
+  adminSoft: '#EEF1F3',
 
-  /** Tła i powierzchnie. */
-  canvas: '#F3F7F8',
-  canvasWarm: '#EEF4F5',
+  /** Tła: ciepła biel + delikatny sage. */
+  canvas: '#F5F7F6',
+  canvasWarm: '#F7F5F1',
   surface: '#FFFFFF',
-  surfaceMuted: '#E8F0F2',
+  surfaceMuted: '#EEF2F1',
+  surfaceElevated: '#FFFFFF',
 
-  /** Obramowania. */
-  line: '#D5E1E5',
-  lineStrong: '#B7C9CF',
+  line: '#DDE5E3',
+  lineStrong: '#C5D0CD',
 
-  /** Tekst. */
-  ink: '#1A2B33',
-  inkSecondary: '#4A5F69',
-  inkMuted: '#6B7F88',
+  ink: '#1C2B2A',
+  inkSecondary: '#4A5C5A',
+  inkMuted: '#6E7F7C',
   inkInverse: '#FFFFFF',
 
-  /** Stany. */
-  warning: '#9A6700',
-  warningSoft: '#FFF4D6',
-  danger: '#B42318',
-  dangerSoft: '#FCEBEA',
-  info: '#1D5C8A',
-  infoSoft: '#E4F1F9',
+  warning: '#8F6A16',
+  warningSoft: '#F8F1E0',
+  danger: '#A63D35',
+  dangerSoft: '#F8EBEA',
+  info: '#2A6A7A',
+  infoSoft: '#E6F2F5',
   demo: '#7A5B1E',
-  demoSoft: '#F7EFD9',
+  demoSoft: '#F6EFE0',
 
-  overlay: 'rgba(26, 43, 51, 0.45)',
-  shadow: 'rgba(19, 79, 86, 0.12)',
+  overlay: 'rgba(28, 43, 42, 0.4)',
+  shadow: 'rgba(26, 107, 102, 0.1)',
 } as const;
 
 export type PaletteToken = keyof typeof palette;

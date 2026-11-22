@@ -52,10 +52,10 @@ const styles = StyleSheet.create({
   },
   input: {
     minHeight: layout.touchMin,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.borderStrong,
     borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.mdPlus,
     paddingVertical: spacing.sm,
     ...typography.body,
     color: colors.text,
