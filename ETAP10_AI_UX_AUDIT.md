@@ -168,8 +168,7 @@ Regresja AI obejmuje: schemat ai/fallback, puste sekcje, alignment statusów, ra
 
 ## 12. Numer commita
 
-Commit Etapu 10: *(uzupełniany po `git commit` — patrz `git log -1 --oneline`)*.
-
+Commit Etapu 10 (naprawy + raport): `eb5cfd4`  
 Bazowy przed zmianami: `2375f21`.
 
 ---
