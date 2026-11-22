@@ -3,12 +3,14 @@ import { Link, router, type Href } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ApiHealthBanner } from '@/components/ui/ApiHealthBanner';
+import { AppSection } from '@/components/ui/AppSection';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InstitutionMark } from '@/components/ui/InstitutionMark';
+import { QuickActionRow } from '@/components/ui/QuickActionRow';
 import { Screen } from '@/components/ui/Screen';
 import { BENEFIT_TONE } from '@/features/benefits/benefitUi';
 import { resolveBenefitInstitution } from '@/features/benefits/resolveBenefitInstitution';
@@ -83,23 +85,36 @@ export function BenefitsHubScreen() {
   return (
     <Screen
       title="Moje świadczenia"
-      subtitle="Zasiłki i urlopy ZUS — ocena na podstawie Twoich danych, przeszkody i kolejny krok do wniosku. Świadczenia poza ZUS (bez silnika oceny) są na osobnym ekranie."
+      subtitle="Ocena zasiłków ZUS na podstawie Twoich danych — z kolejnym krokiem do wniosku."
     >
       <ApiHealthBanner />
       <DemoBanner
         message={
           mode === 'rest'
-            ? 'Ocena dziewięciu świadczeń z silnika na podstawie Twoich danych. To nie decyzja ZUS — deklaracja w ankiecie nie zastępuje potwierdzenia.'
+            ? 'Ocena z silnika. To nie decyzja ZUS — deklaracja w ankiecie nie zastępuje potwierdzenia.'
             : 'Ocena demonstracyjna lokalna — nie decyzja ZUS.'
         }
       />
 
+      <QuickActionRow
+        actions={[
+          { label: 'Mój plan', href: '/home', hint: 'Oś czasu' },
+          { label: 'Moje sprawy', href: '/sprawy', hint: 'Formalności' },
+          { label: 'Kalkulator', href: '/calculator', hint: 'Kwoty' },
+        ]}
+      />
+
       {query.data.missingInputs.length > 0 ? (
-        <Card>
+        <Card style={styles.missingCard}>
           <Badge label="Brakuje danych" tone="primary" />
           <Text style={styles.cardTitle}>Uzupełnij, żeby doprecyzować ocenę</Text>
-          <Text style={styles.body}>Brakuje: {query.data.missingInputs.join(', ')}.</Text>
-          <Button label="Uzupełnij informacje" onPress={() => router.push('/onboarding')} />
+          <Text style={styles.body}>
+            Brakuje: {query.data.missingInputs.join(', ')}.
+          </Text>
+          <Button
+            label="Uzupełnij informacje"
+            onPress={() => router.push('/onboarding')}
+          />
         </Card>
       ) : null}
 
@@ -107,70 +122,84 @@ export function BenefitsHubScreen() {
         const items = grouped[status];
         if (!items.length) return null;
         return (
-          <View key={status} style={styles.group}>
-            <Text style={styles.groupTitle}>{BENEFIT_GROUP_TITLE[status]}</Text>
+          <AppSection
+            key={status}
+            title={BENEFIT_GROUP_TITLE[status]}
+            subtitle={
+              status === 'needs_review'
+                ? 'Wynik wymaga potwierdzenia w ZUS lub u płatnika — nie traktuj go jako odmowy ani przyznania.'
+                : undefined
+            }
+          >
             {items.map((benefit) => (
               <BenefitCard key={benefit.id} benefit={benefit} />
             ))}
-          </View>
+          </AppSection>
         );
       })}
 
-      <Card>
-        <Badge label="Poza silnikiem ZUS" tone="demo" />
-        <Text style={styles.cardTitle}>Inne świadczenia (800+, becikowe…)</Text>
-        <Text style={styles.body}>
-          Nie oceniamy ich w eBobo — brak silnika uprawnień. Tu zostają tylko zasiłki ZUS z
-          indywidualną oceną. Informacje i oficjalne źródła są osobno.
-        </Text>
-        <Button
-          label="Zobacz inne świadczenia"
-          variant="secondary"
-          onPress={() => router.push('/other-benefits')}
-        />
-      </Card>
+      <AppSection title="Poza silnikiem ZUS">
+        <Card style={styles.asideCard}>
+          <Badge label="Informacyjnie" tone="demo" />
+          <Text style={styles.cardTitle}>Inne świadczenia (800+, becikowe…)</Text>
+          <Text style={styles.body}>
+            Nie oceniamy ich w eBobo — brak silnika uprawnień. Tu zostają tylko zasiłki ZUS
+            z indywidualną oceną.
+          </Text>
+          <Button
+            label="Zobacz inne świadczenia"
+            variant="secondary"
+            onPress={() => router.push('/other-benefits')}
+          />
+        </Card>
+      </AppSection>
 
-      <Card>
-        <Badge label={mode === 'rest' ? 'Silnik' : 'Demo'} tone="primary" />
-        <Text style={styles.cardTitle}>Kalkulator i porównanie</Text>
-        <Text style={styles.body}>
-          {mode === 'rest'
-            ? 'Tu sprawdzisz szacowaną kwotę i warianty podziału urlopu rodzicielskiego, w tym 9 tygodni zarezerwowanych dla drugiego rodzica (70%).'
-            : 'W trybie demonstracyjnym kalkulator używa lokalnych przykładów.'}
-        </Text>
-        <Button
-          label="Otwórz kalkulator"
-          variant="secondary"
-          onPress={() => router.push('/calculator')}
-        />
-      </Card>
+      <AppSection title="Kalkulator">
+        <Card style={styles.asideCard}>
+          <Badge label={mode === 'rest' ? 'Silnik' : 'Demo'} tone="primary" />
+          <Text style={styles.body}>
+            Szacowane kwoty i warianty podziału urlopu rodzicielskiego, w tym 9 tygodni
+            zarezerwowanych dla drugiego rodzica (70%).
+          </Text>
+          <Button
+            label="Otwórz kalkulator"
+            onPress={() => router.push('/calculator')}
+          />
+        </Card>
+      </AppSection>
 
-      <Card>
-        <Text style={styles.meta}>
-          Wersja reguł hubu: {query.data.ruleSetVersion}. {query.data.warnings.join(' ')}
-        </Text>
-        <Link href="/sprawy">
-          <Text style={styles.link}>Przejdź do Moich spraw (terminy i checklista) →</Text>
-        </Link>
-      </Card>
+      <Text style={styles.meta}>
+        Wersja reguł hubu: {query.data.ruleSetVersion}.{' '}
+        {query.data.warnings.join(' ')}
+      </Text>
     </Screen>
   );
 }
 
 function BenefitCard({ benefit }: { benefit: BenefitAssessment }) {
   const institutionId = resolveBenefitInstitution(benefit);
+  const needsReview = benefit.status === 'needs_review';
 
   return (
-    <Card>
+    <Card style={needsReview ? styles.reviewCard : undefined}>
       <View style={styles.cardTop}>
-        <Badge label={BENEFIT_STATUS_LABEL[benefit.status]} tone={BENEFIT_TONE[benefit.status]} />
+        <Badge
+          label={BENEFIT_STATUS_LABEL[benefit.status]}
+          tone={BENEFIT_TONE[benefit.status]}
+        />
         {institutionId ? <InstitutionMark institutionId={institutionId} /> : null}
       </View>
       <Text style={styles.cardTitle}>{benefit.title}</Text>
       <Text style={styles.body}>{benefit.headline}</Text>
       <Text style={styles.meta}>{benefit.summary}</Text>
+      {needsReview ? (
+        <Text style={styles.reviewHint}>
+          Wymagana weryfikacja — część warunków ustaliliśmy, ale wynik trzeba potwierdzić
+          w instytucji.
+        </Text>
+      ) : null}
       {benefit.warnings && benefit.warnings.length > 0 ? (
-        <Badge label={`${benefit.warnings.length} ostrzeż.`} tone="warning" />
+        <Badge label={`${benefit.warnings.length} ostrzeżeń`} tone="warning" />
       ) : null}
       {benefit.planMissing ? (
         <Badge label="Brak planu formalności" tone="neutral" />
@@ -203,8 +232,6 @@ function groupBenefits(benefits: BenefitAssessment[]) {
 }
 
 const styles = StyleSheet.create({
-  group: { gap: spacing.md },
-  groupTitle: { ...typography.h2, color: colors.text },
   cardTop: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -212,9 +239,28 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   cardTitle: { ...typography.h3, color: colors.text, marginTop: spacing.sm },
-  body: { ...typography.body, color: colors.textSecondary, marginVertical: spacing.sm },
+  body: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginVertical: spacing.sm,
+  },
   meta: { ...typography.small, color: colors.textMuted, marginBottom: spacing.sm },
-  next: { ...typography.bodyStrong, color: colors.text, marginBottom: spacing.sm },
+  next: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
   link: { ...typography.bodyStrong, color: colors.primary, marginTop: spacing.sm },
   muted: { ...typography.body, color: colors.textSecondary },
+  missingCard: { gap: spacing.xs },
+  asideCard: { gap: spacing.sm },
+  reviewCard: {
+    borderColor: colors.warning,
+    backgroundColor: colors.warningSoft,
+  },
+  reviewHint: {
+    ...typography.small,
+    color: colors.warning,
+    marginBottom: spacing.sm,
+  },
 });

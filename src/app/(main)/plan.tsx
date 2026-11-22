@@ -4,10 +4,12 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ApiHealthBanner } from '@/components/ui/ApiHealthBanner';
+import { AppSection } from '@/components/ui/AppSection';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { QuickActionRow } from '@/components/ui/QuickActionRow';
 import { Screen } from '@/components/ui/Screen';
 import { ChecklistList, type ChecklistFilter } from '@/features/checklist/ChecklistList';
 import { buildParentPlan } from '@/features/plan/buildParentPlan';
@@ -90,9 +92,19 @@ export default function PlanScreen() {
       <ApiHealthBanner />
       <DemoBanner message="Filtry formalności. Pełną oś czasu znajdziesz w Mój plan." />
 
+      <QuickActionRow
+        actions={[
+          { label: 'Mój plan', href: '/home', hint: 'Oś czasu' },
+          { label: 'Moje sprawy', href: '/sprawy', hint: 'Radar' },
+          { label: 'Świadczenia', href: '/benefits', hint: 'Ocena' },
+        ]}
+      />
+
       {query.isLoading ? (
         <Card>
-          <Text style={styles.muted}>Dociągam ocenę FastAPI — lokalna checklista DEMO już poniżej.</Text>
+          <Text style={styles.muted}>
+            Dociągam ocenę silnika — lokalna checklista DEMO już poniżej.
+          </Text>
         </Card>
       ) : null}
 
@@ -108,32 +120,37 @@ export default function PlanScreen() {
         </Card>
       ) : null}
 
-      <Button
-        label="Wróć do Mój plan (oś czasu)"
-        variant="secondary"
-        onPress={() => router.push('/home')}
-      />
+      <AppSection
+        step="C"
+        title="Checklista z filtrami"
+        subtitle="Te same źródła co w Moich sprawach — bez pustej listy po merge."
+      >
+        <Text style={styles.summary}>
+          Obowiązkowe: {counts.required} · Opcjonalne: {counts.optional} · Do
+          weryfikacji: {counts.needs_verification} · Razem: {items.length}
+        </Text>
 
-      <Text style={styles.summary}>
-        Obowiązkowe: {counts.required} · Opcjonalne: {counts.optional} · Do weryfikacji:{' '}
-        {counts.needs_verification} · Razem: {items.length}
-      </Text>
-
-      <View style={styles.filters}>
-        {FILTERS.map((item) => (
-          <Pressable
-            key={item.id}
-            onPress={() => setFilter(item.id)}
-            style={[styles.filter, filter === item.id && styles.filterActive]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: filter === item.id }}
-          >
-            <Text style={[styles.filterText, filter === item.id && styles.filterTextActive]}>
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+        <View style={styles.filters}>
+          {FILTERS.map((item) => (
+            <Pressable
+              key={item.id}
+              onPress={() => setFilter(item.id)}
+              style={[styles.filter, filter === item.id && styles.filterActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: filter === item.id }}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  filter === item.id && styles.filterTextActive,
+                ]}
+              >
+                {item.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </AppSection>
 
       <ChecklistList items={items} filter={filter} onStatusChange={setChecklistStatus} />
     </Screen>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ChoiceChip } from '@/components/ui/ChoiceChip';
@@ -201,6 +202,7 @@ export function OnboardingWizard() {
     >
       <DemoBanner message="Ankieta jest lokalna — nic nie wysyłamy do ZUS. To nie jest wniosek urzędowy." />
       <View style={styles.header}>
+        <Badge label={`Krok ${step + 1} z ${total}`} tone="primary" />
         <Text style={styles.title}>
           {sensitive ? 'Dopasujemy spokojny plan do Twojej sytuacji' : 'Poznajmy Twoją sytuację'}
         </Text>
