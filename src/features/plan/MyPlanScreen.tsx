@@ -18,11 +18,13 @@ import {
 } from 'lucide-react-native';
 
 import { ApiHealthBanner } from '@/components/ui/ApiHealthBanner';
+import { AppSection } from '@/components/ui/AppSection';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { QuickActionRow } from '@/components/ui/QuickActionRow';
 import { Screen } from '@/components/ui/Screen';
 import { buildParentPlan } from '@/features/plan/buildParentPlan';
 import {
@@ -32,6 +34,7 @@ import {
   PLAN_CATEGORY_LABEL,
   PLAN_KIND_LABEL,
 } from '@/features/plan/planUi';
+import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import { formatShortDatePl } from '@/lib/format';
 import { FACILITY_TYPE_LABEL } from '@/types/facilities';
 import { useFacilitiesStore } from '@/store/useFacilitiesStore';
@@ -40,10 +43,7 @@ import { colors, radii, spacing, typography } from '@/theme';
 import type { ChecklistStatus } from '@/types/journey';
 import type { PlanTask, PlanTaskCategory } from '@/types/plan';
 
-const CATEGORY_ICON: Record<
-  PlanTaskCategory,
-  typeof Landmark
-> = {
+const CATEGORY_ICON: Record<PlanTaskCategory, typeof Landmark> = {
   zus: Landmark,
   health: HeartPulse,
   admin: Building2,
@@ -59,6 +59,7 @@ export function MyPlanScreen() {
   const removeFavorite = useFacilitiesStore((s) => s.removeFavorite);
   const unpinEvent = useFacilitiesStore((s) => s.unpinEvent);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { columns } = useAdaptiveLayout();
 
   const plan = useMemo(
     () => buildParentPlan(profile, overrides),
@@ -78,6 +79,17 @@ export function MyPlanScreen() {
     );
   }
 
+  const openTasks = plan.tasks.filter((t) => t.status !== 'done');
+  const focusTask =
+    openTasks.find((t) => t.bucket === 'now') ??
+    openTasks.find((t) => t.priority === 'required') ??
+    openTasks[0] ??
+    null;
+
+  const upcoming = plan.tasks
+    .filter((t) => t.status !== 'done' && (t.dueDate || t.windowLabel))
+    .slice(0, 4);
+
   const grouped = PLAN_BUCKET_ORDER.map((bucket) => ({
     bucket,
     items: plan.tasks.filter((t) => t.bucket === bucket),
@@ -85,67 +97,186 @@ export function MyPlanScreen() {
 
   const progress =
     plan.tasks.length === 0 ? 0 : plan.doneCount / plan.tasks.length;
+  const twoCol = columns > 1;
 
   return (
-    <Screen title="Mój plan">
+    <Screen
+      title="Mój plan"
+      subtitle="Centrum formalności — lokalna oś czasu DEMO oraz szybkie przejścia do oceny i kalkulatora."
+    >
       <ApiHealthBanner />
-      <DemoBanner message="To lokalny plan demonstracyjny (oś czasu). Ocenę uprawnień i kwoty znajdziesz w Świadczeniach i Kalkulatorze; formalności także w Moich sprawach." />
+      <DemoBanner message="Lokalny plan demonstracyjny. Ocena uprawnień i kwoty są w Świadczeniach i Kalkulatorze — nie myl ich z tą osią czasu." />
 
-      <Card>
-        <Text style={styles.stage}>{plan.timeline.stageLabel}</Text>
-        {plan.timeline.progressLabel ? (
-          <Text style={styles.progressLabel}>{plan.timeline.progressLabel}</Text>
-        ) : null}
-        {plan.nextDeadline ? (
-          <Text style={styles.nextDeadline}>
-            Najbliższy termin: {plan.nextDeadline.title} ·{' '}
-            {formatShortDatePl(plan.nextDeadline.date)}
-          </Text>
-        ) : (
-          <Text style={styles.nextDeadline}>Brak sztywnego terminu w otwartych zadaniach.</Text>
-        )}
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
-        </View>
-        <Text style={styles.progressMeta}>
-          Zrobione {plan.doneCount} z {plan.tasks.length} · otwarte {plan.openCount}
-        </Text>
-        <View style={styles.quickLinks}>
-          <Link href="/benefits">
-            <Text style={styles.quickLink}>Świadczenia →</Text>
-          </Link>
-          <Link href="/sprawy">
-            <Text style={styles.quickLink}>Moje sprawy →</Text>
-          </Link>
-          <Link href="/calculator">
-            <Text style={styles.quickLink}>Kalkulator →</Text>
-          </Link>
-          <Link href="/calendar">
-            <Text style={styles.quickLink}>Kalendarz →</Text>
-          </Link>
-        </View>
-      </Card>
+      <View style={[styles.stack, twoCol && styles.stackDesktop]}>
+        <View style={[styles.col, twoCol && styles.colMain]}>
+          <AppSection step="A" title="Twój etap">
+            <Card style={styles.heroCard}>
+              <Badge label="Profil lokalny" tone="demo" />
+              <Text style={styles.heroStage}>{plan.timeline.stageLabel}</Text>
+              {plan.timeline.progressLabel ? (
+                <Text style={styles.heroProgress}>{plan.timeline.progressLabel}</Text>
+              ) : null}
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${Math.round(progress * 100)}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressMeta}>
+                Zrobione {plan.doneCount} z {plan.tasks.length} · otwarte{' '}
+                {plan.openCount}
+              </Text>
+            </Card>
+          </AppSection>
 
-      {grouped.map(({ bucket, items }) => (
-        <View key={bucket} style={styles.section}>
-          <Text style={styles.sectionTitle}>{PLAN_BUCKET_LABEL[bucket]}</Text>
-          {items.map((task) => (
-            <PlanTaskCard
-              key={task.id}
-              task={task}
-              expanded={expandedId === task.id}
-              onToggle={() =>
-                setExpandedId((id) => (id === task.id ? null : task.id))
-              }
-              onStatus={(status) => setChecklistStatus(task.id, status)}
+          <AppSection
+            step="B"
+            title="Najważniejsze teraz"
+            subtitle="Najbardziej istotna otwarta czynność z planu — bez sztucznej pilności."
+          >
+            {focusTask ? (
+              <Card style={styles.focusCard}>
+                <View style={styles.focusBadges}>
+                  <Badge
+                    label={PLAN_CATEGORY_LABEL[focusTask.category]}
+                    tone="primary"
+                  />
+                  <Badge label={PLAN_KIND_LABEL[focusTask.kind]} tone="neutral" />
+                </View>
+                <Text style={styles.focusTitle}>{focusTask.title}</Text>
+                <Text style={styles.focusSummary}>{focusTask.summary}</Text>
+                {focusTask.dueDate || focusTask.windowLabel ? (
+                  <Text style={styles.focusDue}>
+                    {focusTask.dueDate
+                      ? `Termin: ${formatShortDatePl(focusTask.dueDate)}`
+                      : focusTask.windowLabel}
+                  </Text>
+                ) : null}
+                <Button
+                  label={focusTask.ctaLabel}
+                  onPress={() => router.push(focusTask.ctaHref as Href)}
+                  fullWidth
+                />
+              </Card>
+            ) : (
+              <Card>
+                <Text style={styles.emptyCopy}>
+                  Brak otwartych zadań w planie. Możesz sprawdzić świadczenia albo
+                  poprawić ankietę.
+                </Text>
+                <Button
+                  label="Moje świadczenia"
+                  onPress={() => router.push('/benefits')}
+                />
+              </Card>
+            )}
+          </AppSection>
+        </View>
+
+        <View style={[styles.col, twoCol && styles.colSide]}>
+          <AppSection
+            step="D"
+            title="Nadchodzące terminy"
+            subtitle="Tylko terminy z planu. Opisy bez daty nie dostają sztucznej daty."
+          >
+            <Card style={styles.deadlinesCard}>
+              {plan.nextDeadline ? (
+                <View style={styles.deadlineHighlight}>
+                  <Badge label="Najbliższy" tone="warning" />
+                  <Text style={styles.deadlineTitle}>{plan.nextDeadline.title}</Text>
+                  <Text style={styles.deadlineDate}>
+                    {formatShortDatePl(plan.nextDeadline.date)}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.emptyCopy}>
+                  Brak sztywnego terminu w otwartych zadaniach.
+                </Text>
+              )}
+              {upcoming.map((task) => (
+                <View key={task.id} style={styles.deadlineRow}>
+                  <Text style={styles.deadlineRowTitle} numberOfLines={2}>
+                    {task.title}
+                  </Text>
+                  <Text style={styles.deadlineRowMeta}>
+                    {task.dueDate
+                      ? formatShortDatePl(task.dueDate)
+                      : task.windowLabel}
+                  </Text>
+                </View>
+              ))}
+              <Button
+                label="Moje sprawy i radar"
+                variant="secondary"
+                onPress={() => router.push('/sprawy')}
+              />
+            </Card>
+          </AppSection>
+
+          <AppSection
+            step="E"
+            title="Twoje świadczenia"
+            subtitle="Ocena i kwoty pochodzą z silnika — nie z tej osi DEMO."
+          >
+            <Card style={styles.teaserCard}>
+              <Text style={styles.teaserBody}>
+                Sprawdź, co prawdopodobnie Ci przysługuje, czego brakuje i jak złożyć
+                wniosek. Szacunki nie są decyzją ZUS.
+              </Text>
+              <Button
+                label="Otwórz świadczenia"
+                onPress={() => router.push('/benefits')}
+                fullWidth
+              />
+              <Button
+                label="Kalkulator kwot"
+                variant="secondary"
+                onPress={() => router.push('/calculator')}
+                fullWidth
+              />
+            </Card>
+          </AppSection>
+
+          <AppSection step="F" title="Szybkie działania">
+            <QuickActionRow
+              actions={[
+                { label: 'Moje sprawy', href: '/sprawy', hint: 'Checklista' },
+                { label: 'Świadczenia', href: '/benefits', hint: 'Ocena' },
+                { label: 'Kalkulator', href: '/calculator', hint: 'Kwoty' },
+                { label: 'Kalendarz', href: '/calendar', hint: 'Terminy' },
+              ]}
             />
-          ))}
+          </AppSection>
         </View>
-      ))}
+      </View>
+
+      <AppSection
+        step="C"
+        title="Twój plan działania"
+        subtitle="Lokalna checklista DEMO — oznaczaj statusy, rozwijaj kroki."
+      >
+        {grouped.map(({ bucket, items }) => (
+          <View key={bucket} style={styles.bucket}>
+            <Text style={styles.bucketTitle}>{PLAN_BUCKET_LABEL[bucket]}</Text>
+            {items.map((task) => (
+              <PlanTaskCard
+                key={task.id}
+                task={task}
+                expanded={expandedId === task.id}
+                onToggle={() =>
+                  setExpandedId((id) => (id === task.id ? null : task.id))
+                }
+                onStatus={(status) => setChecklistStatus(task.id, status)}
+              />
+            ))}
+          </View>
+        ))}
+      </AppSection>
 
       {favorites.length > 0 || pinnedEvents.length > 0 ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Zapisane z mapy</Text>
+        <AppSection title="Zapisane z mapy">
           {favorites.map((fav) => (
             <Card key={fav.id}>
               <Badge label={FACILITY_TYPE_LABEL[fav.type]} tone="primary" />
@@ -187,7 +318,7 @@ export function MyPlanScreen() {
               </View>
             </Card>
           ))}
-        </View>
+        </AppSection>
       ) : null}
 
       <Button
@@ -277,7 +408,9 @@ function PlanTaskCard({
           ) : null}
           <Fact
             label="Online"
-            value={task.onlinePossible ? 'Możliwe online / częściowo' : 'Raczej stacjonarnie'}
+            value={
+              task.onlinePossible ? 'Możliwe online / częściowo' : 'Raczej stacjonarnie'
+            }
           />
           <Fact
             label="Źródło"
@@ -358,27 +491,67 @@ function StatusChip({
 }
 
 const styles = StyleSheet.create({
-  stage: { ...typography.h2, color: colors.text },
-  progressLabel: { ...typography.bodyStrong, color: colors.primaryHover, marginTop: spacing.xs },
-  nextDeadline: { ...typography.small, color: colors.textSecondary, marginTop: spacing.sm },
+  stack: { gap: spacing.xl },
+  stackDesktop: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+  },
+  col: { gap: spacing.xl, width: '100%' },
+  colMain: { flexGrow: 1, flexBasis: 360, maxWidth: 720 },
+  colSide: { flexGrow: 1, flexBasis: 300, maxWidth: 420 },
+  heroCard: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primaryMuted,
+    gap: spacing.xs,
+  },
+  heroStage: { ...typography.h2, color: colors.text, marginTop: spacing.xs },
+  heroProgress: {
+    ...typography.bodyStrong,
+    color: colors.primaryHover,
+  },
   progressTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.surfaceMuted,
+    height: 8,
+    borderRadius: radii.full,
+    backgroundColor: colors.surface,
     marginTop: spacing.md,
     overflow: 'hidden',
   },
   progressFill: { height: '100%', backgroundColor: colors.primary },
-  progressMeta: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
-  quickLinks: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    marginTop: spacing.md,
+  progressMeta: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
-  quickLink: { ...typography.bodyStrong, color: colors.primary },
-  section: { gap: spacing.sm },
-  sectionTitle: { ...typography.h3, color: colors.text },
+  focusCard: { gap: spacing.sm },
+  focusBadges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  focusTitle: { ...typography.h2, color: colors.text },
+  focusSummary: { ...typography.body, color: colors.textSecondary },
+  focusDue: { ...typography.small, color: colors.warning },
+  deadlinesCard: { gap: spacing.sm },
+  deadlineHighlight: {
+    gap: spacing.xs,
+    padding: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: colors.warningSoft,
+    borderWidth: 1,
+    borderColor: colors.warning,
+  },
+  deadlineTitle: { ...typography.bodyStrong, color: colors.text },
+  deadlineDate: { ...typography.h3, color: colors.warning },
+  deadlineRow: {
+    paddingVertical: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 2,
+  },
+  deadlineRowTitle: { ...typography.bodyStrong, color: colors.text },
+  deadlineRowMeta: { ...typography.caption, color: colors.textMuted },
+  teaserCard: { gap: spacing.sm },
+  teaserBody: { ...typography.body, color: colors.textSecondary },
+  emptyCopy: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
+  bucket: { gap: spacing.sm },
+  bucketTitle: { ...typography.bodyStrong, color: colors.textMuted },
   cardTop: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   catMark: {
     width: 36,
@@ -390,7 +563,10 @@ const styles = StyleSheet.create({
   cardCopy: { flex: 1, minWidth: 0, gap: 4 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   cardTitle: { ...typography.bodyStrong, color: colors.text, fontSize: 17 },
-  cardTitleDone: { textDecorationLine: 'line-through', color: colors.textSecondary },
+  cardTitleDone: {
+    textDecorationLine: 'line-through',
+    color: colors.textSecondary,
+  },
   cardSummary: { ...typography.small, color: colors.textSecondary },
   meta: { ...typography.caption, color: colors.warning, marginTop: 2 },
   details: { marginTop: spacing.md, gap: spacing.sm },
@@ -425,5 +601,10 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
   },
-  favActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
+  favActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
 });
