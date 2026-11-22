@@ -142,8 +142,7 @@ Android/iOS: **nie testowano** w Etapie 8.
 
 ## 8. Numer commita
 
-`5ec1e89` — `fix(etap8): stabilize calculator presentation and jury demo readiness`  
-(aktualizacja numeru w tym pliku może być w kolejnym mikro-commicie docs)
+`5ec1e89` — `fix(etap8): stabilize calculator presentation and jury demo readiness`
 
 ---
 
