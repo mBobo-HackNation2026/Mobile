@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InstitutionMark } from '@/components/ui/InstitutionMark';
+import { LegalDisclaimer } from '@/components/ui/LegalDisclaimer';
 import { QuickActionRow } from '@/components/ui/QuickActionRow';
 import { Screen } from '@/components/ui/Screen';
 import { BENEFIT_TONE } from '@/features/benefits/benefitUi';
@@ -172,6 +173,7 @@ export function BenefitsHubScreen() {
         Wersja reguł hubu: {query.data.ruleSetVersion}.{' '}
         {query.data.warnings.join(' ')}
       </Text>
+      <LegalDisclaimer />
     </Screen>
   );
 }

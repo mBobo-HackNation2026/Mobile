@@ -226,30 +226,55 @@ function mapSolutionKind(type: string): RemedyKind {
   }
 }
 
+const RETIRED_FORM_RE = /\b(Z-3b|ZUR|ZAO)\b/i;
+
 function mapPlanToProcedure(
   result: EligibilityCheckResult,
 ): BenefitAssessment['procedure'] {
   const plan = result.plan;
   if (!plan) return null;
 
-  const docs = plan.required_documents.map((d) => d.name || d.code);
-  const formFromDocs = plan.required_documents.find((d) =>
+  /** Preferuj ZAM; nie promuj wycofanych formularzy jako głównego kodu. */
+  const zamDoc = plan.required_documents.find((d) =>
     /zam/i.test(`${d.code} ${d.name}`),
   );
+  const primaryForm = zamDoc
+    ? 'ZAM'
+    : plan.required_documents.find(
+        (d) => !RETIRED_FORM_RE.test(`${d.code} ${d.name}`),
+      )?.code ?? null;
+
+  const docs = plan.required_documents.map((d) => {
+    const label = d.name || d.code;
+    const when = d.when?.trim();
+    const retired = RETIRED_FORM_RE.test(`${d.code} ${d.name}`);
+    if (retired) {
+      return `${label} — wzór może być nieaktualny (od 24.10.2026: ZAM; Z-3b wycofano)${when ? `; warunek API: ${when}` : ''}`;
+    }
+    if (when && !/^zawsze|always|wymagany/i.test(when)) {
+      return `${label} (gdy: ${when})`;
+    }
+    return when ? `${label} (${when})` : label;
+  });
 
   return {
-    formCode: formFromDocs?.code?.toUpperCase().includes('ZAM')
-      ? 'ZAM'
-      : formFromDocs?.code ?? null,
+    formCode: primaryForm,
     documents: docs.length ? docs : ['Dokumenty wg planu API'],
     office: plan.institution,
     submitBy: plan.deadlines[0] ?? null,
     steps: [
       'Sprawdź warunki zwrócone przez silnik uprawnień.',
-      ...plan.required_documents.map(
-        (d) => `Dokument: ${d.name}${d.when ? ` (${d.when})` : ''}`,
-      ),
+      ...plan.required_documents.map((d) => {
+        const retired = RETIRED_FORM_RE.test(`${d.code} ${d.name}`);
+        const base = `Dokument z API: ${d.name}${d.when ? ` — ${d.when}` : ''}`;
+        return retired
+          ? `${base}. Nie traktuj jako pewnego bieżącego obowiązku — zweryfikuj aktualny wzór (ZAM).`
+          : base;
+      }),
       ...plan.deadlines.map((d) => `Termin / uwaga: ${d}`),
+      ...(plan.legal_basis.length
+        ? plan.legal_basis.map((b) => `Podstawa prawna (API): ${b}`)
+        : []),
       'Złóż wniosek we właściwym trybie (w app — tylko symulacja).',
     ],
     simulatedSubmission: true,

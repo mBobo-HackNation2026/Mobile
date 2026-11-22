@@ -33,6 +33,9 @@ const variantSchema = z.object({
   label: z.string(),
   weeks_parent_a: z.number().int(),
   weeks_parent_b: z.number().int(),
+  /** Opcjonalne — BE może podać stawki per rodzic (np. 81.50 / 70.00). */
+  rate_percentage_parent_a: z.string().nullable().optional(),
+  rate_percentage_parent_b: z.string().nullable().optional(),
   amount_parent_a_zl: z.string().nullable(),
   amount_parent_b_zl: z.string().nullable(),
   total_household_amount_zl: z.string().nullable(),

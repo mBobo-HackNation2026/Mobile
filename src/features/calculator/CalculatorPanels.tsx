@@ -4,10 +4,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { LegalDisclaimer } from '@/components/ui/LegalDisclaimer';
 import {
+  LEGAL_DISCLAIMER_CALC,
   NON_TRANSFERABLE_PARENT_NOTE,
   UNVERIFIED_AMOUNT_NOTE,
-  hasUnverifiedRateWarning,
+  compareHasCalculationDefect,
+  hasCalculationDefectWarning,
   rateVariantLabel,
 } from '@/features/calculator/calculatorPresentation';
 import {
@@ -104,7 +107,7 @@ export function CalculatorResultHero({
     );
   }
 
-  const unverified = hasUnverifiedRateWarning(result.warnings);
+  const calcDefect = hasCalculationDefectWarning(result.warnings);
   const ambiguousZero =
     isZeroAmount(result.total_amount_zl) && result.total_days === 0;
   const isLumpSum =
@@ -119,28 +122,29 @@ export function CalculatorResultHero({
   const rate = primaryRateFromBreakdown(result.rate_breakdown);
 
   return (
-    <Card style={unverified ? styles.heroCardWarn : styles.heroCard}>
+    <Card style={calcDefect ? styles.heroCardWarn : styles.heroCard}>
       <View style={styles.heroTop}>
         <Badge
           label={
-            unverified
-              ? 'Szacunek — wymaga weryfikacji'
+            calcDefect
+              ? 'Szacunek — możliwy problem wyliczenia'
               : ambiguousZero
                 ? 'Wymiar nieustalony'
                 : 'Szacunek z silnika'
           }
-          tone={unverified || ambiguousZero ? 'warning' : 'success'}
+          tone={calcDefect || ambiguousZero ? 'warning' : 'success'}
         />
+        <Badge label="Nie decyzja ZUS" tone="neutral" />
         <Text style={styles.heroVariant}>{rateVariantLabel(fullDose21)}</Text>
       </View>
       <Text style={styles.heroName}>{result.benefit_name}</Text>
       <Text
-        style={[styles.heroAmount, unverified && styles.heroAmountMuted]}
+        style={[styles.heroAmount, calcDefect && styles.heroAmountMuted]}
         accessibilityRole="text"
       >
         {displayAmount}
       </Text>
-      {unverified ? <Text style={styles.warn}>{UNVERIFIED_AMOUNT_NOTE}</Text> : null}
+      {calcDefect ? <Text style={styles.warn}>{UNVERIFIED_AMOUNT_NOTE}</Text> : null}
       {ambiguousZero ? (
         <Text style={styles.warn}>
           Silnik zwrócił 0 dni i 0 zł. To może oznaczać brak wymiaru przy tych danych, a nie
@@ -169,9 +173,13 @@ export function CalculatorResultHero({
           />
         ) : null}
       </View>
-      <Text style={styles.disclaimer}>
-        Symulacja przy przyjętych założeniach. Nie jest decyzją ZUS.
-      </Text>
+      {result.warnings.map((w) => (
+        <Text key={w} style={styles.warn}>
+          {w}
+        </Text>
+      ))}
+      <Text style={styles.disclaimer}>{LEGAL_DISCLAIMER_CALC}</Text>
+      <LegalDisclaimer variant="compact" />
     </Card>
   );
 }
@@ -192,7 +200,7 @@ export function CalculatorComparePanel({
   result: ParentalLeaveCompareResponse;
   fullDose21: boolean;
 }) {
-  const unverified = hasUnverifiedRateWarning(result.warnings);
+  const calcDefect = compareHasCalculationDefect(result);
   const pool = Math.max(1, result.total_pool_weeks);
 
   return (
@@ -200,17 +208,18 @@ export function CalculatorComparePanel({
       <View style={styles.compareIntro}>
         <Badge
           label={
-            unverified
-              ? 'Porównanie wstępne — do weryfikacji'
+            calcDefect
+              ? 'Porównanie — możliwy problem wyliczenia'
               : 'Porównanie z silnika'
           }
-          tone={unverified ? 'warning' : 'primary'}
+          tone={calcDefect ? 'warning' : 'primary'}
         />
+        <Badge label="Nie decyzja ZUS" tone="neutral" />
         <Text style={styles.compareMeta}>
           Pula {result.total_pool_weeks} tyg. · model stawki w odpowiedzi:{' '}
           {result.rate_percentage}% · {rateVariantLabel(fullDose21)}
         </Text>
-        {unverified ? <Text style={styles.warn}>{UNVERIFIED_AMOUNT_NOTE}</Text> : null}
+        {calcDefect ? <Text style={styles.warn}>{UNVERIFIED_AMOUNT_NOTE}</Text> : null}
       </View>
 
       <View style={styles.reservedCard}>
@@ -256,13 +265,20 @@ export function CalculatorComparePanel({
                 <Text
                   style={[
                     styles.variantTotalValue,
-                    unverified && styles.heroAmountMuted,
+                    calcDefect && styles.heroAmountMuted,
                   ]}
                 >
                   {formatNullableZl(variant.total_household_amount_zl)}
-                  {unverified ? ' · wstępna' : ''}
+                  {calcDefect ? ' · wstępna' : ''}
                 </Text>
               </View>
+              {variant.rate_percentage_parent_a ||
+              variant.rate_percentage_parent_b ? (
+                <Text style={styles.reservedHint}>
+                  Stawki z API: A {variant.rate_percentage_parent_a ?? '—'}% · B{' '}
+                  {variant.rate_percentage_parent_b ?? '—'}%
+                </Text>
+              ) : null}
             </Card>
           );
         })}
@@ -273,6 +289,7 @@ export function CalculatorComparePanel({
           {w}
         </Text>
       ))}
+      <LegalDisclaimer variant="compact" />
     </View>
   );
 }

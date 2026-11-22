@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LegalDisclaimer } from '@/components/ui/LegalDisclaimer';
 import { QuickActionRow } from '@/components/ui/QuickActionRow';
 import { Screen } from '@/components/ui/Screen';
 import { buildParentPlan } from '@/features/plan/buildParentPlan';
@@ -329,6 +330,7 @@ export function MyPlanScreen() {
       <Link href="/home-menu">
         <Text style={styles.menuLink}>Pełne menu skrótów →</Text>
       </Link>
+      <LegalDisclaimer />
     </Screen>
   );
 }

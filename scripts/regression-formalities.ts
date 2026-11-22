@@ -2,6 +2,10 @@
  * Regresja: deriveFormalities + merge checklist (prawdziwe moduły TS).
  * npx --yes tsx scripts/regression-formalities.ts
  */
+import {
+  compareHasCalculationDefect,
+  hasCalculationDefectWarning,
+} from '../src/features/calculator/calculatorPresentation';
 import { deriveFormalitiesFromBenefits } from '../src/services/api/deriveFormalitiesFromBenefits';
 import {
   mergeChecklists,
@@ -87,5 +91,64 @@ assert(merged.length >= 2, 'merged has api+local');
 
 const emptyApi = mergeChecklists([], local);
 assert(emptyApi.length === 1, 'offline/local-only not empty');
+
+/** FE-01 Etap 8: informacyjne ostrzeżenia ≠ defekt wyliczenia. */
+assert(
+  !hasCalculationDefectWarning([
+    'Za nieprzenoszalne 9 tygodni drugiego rodzica przysługuje stawka 70%.',
+    'Wariant uśredniony 81,5% dotyczy wniosku o pełny wymiar w 21 dni.',
+  ]),
+  'informational compare warnings must not flag calc defect',
+);
+assert(
+  hasCalculationDefectWarning([
+    'Silnik zastosował 81,5% także do nieprzenoszalnych 9 tygodni (uproszczenie).',
+  ]),
+  'real rate defect warning must flag',
+);
+assert(
+  !compareHasCalculationDefect({
+    total_pool_weeks: 41,
+    non_transferable_weeks_per_parent: 9,
+    rate_percentage: '81.50',
+    variants: [
+      {
+        label: 'A 32 / B 9',
+        weeks_parent_a: 32,
+        weeks_parent_b: 9,
+        rate_percentage_parent_a: '81.50',
+        rate_percentage_parent_b: '70.00',
+        amount_parent_a_zl: '100',
+        amount_parent_b_zl: '50',
+        total_household_amount_zl: '150',
+      },
+    ],
+    warnings: [
+      'Za nieprzenoszalne 9 tygodni drugiego rodzica przysługuje stawka 70%.',
+    ],
+  }),
+  'correct 70% on reserved weeks must not be wstępna',
+);
+assert(
+  compareHasCalculationDefect({
+    total_pool_weeks: 41,
+    non_transferable_weeks_per_parent: 9,
+    rate_percentage: '81.50',
+    variants: [
+      {
+        label: 'A 32 / B 9',
+        weeks_parent_a: 32,
+        weeks_parent_b: 9,
+        rate_percentage_parent_a: '81.50',
+        rate_percentage_parent_b: '81.50',
+        amount_parent_a_zl: '100',
+        amount_parent_b_zl: '50',
+        total_household_amount_zl: '150',
+      },
+    ],
+    warnings: [],
+  }),
+  '81.5% on reserved parent B weeks is calc defect',
+);
 
 console.log('PASS regression-formalities.ts');

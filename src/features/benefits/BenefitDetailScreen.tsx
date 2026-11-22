@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InstitutionMark } from '@/components/ui/InstitutionMark';
+import { LegalDisclaimer } from '@/components/ui/LegalDisclaimer';
 import { Screen } from '@/components/ui/Screen';
 import { BENEFIT_TONE, CONDITION_LABEL, CONDITION_TONE } from '@/features/benefits/benefitUi';
 import { resolveBenefitInstitution } from '@/features/benefits/resolveBenefitInstitution';
@@ -77,6 +78,11 @@ export function BenefitDetailScreen() {
   }
 
   const institutionId = resolveBenefitInstitution(benefit);
+  const needsReview =
+    benefit.status === 'needs_review' || benefit.requiresVerification;
+  const formWarnings = (benefit.warnings ?? []).filter((w) =>
+    /Z-3b|ZAM|formularz|druk/i.test(w),
+  );
 
   return (
     <Screen title={benefit.title} subtitle={benefit.headline} backFallbackHref="/benefits">
@@ -87,6 +93,7 @@ export function BenefitDetailScreen() {
             : 'Tryb demonstracyjny — dane przykładowe, bez połączenia z ZUS.'
         }
       />
+      {needsReview ? <LegalDisclaimer variant="verification" /> : <LegalDisclaimer />}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Badge label={BENEFIT_STATUS_LABEL[benefit.status]} tone={BENEFIT_TONE[benefit.status]} />
@@ -98,6 +105,25 @@ export function BenefitDetailScreen() {
           <Text style={styles.meta}>Adresat: {INSTITUTIONS[institutionId].fullLabel}</Text>
         ) : null}
       </View>
+      {formWarnings.length > 0 ? (
+        <Card>
+          <Badge label="Dokumenty — do weryfikacji" tone="warning" />
+          <Text style={styles.section}>Formularze i dokumenty</Text>
+          <Text style={styles.body}>
+            Poniższe informacje pochodzą z odpowiedzi silnika. Nie oznaczamy ich jako
+            pewnego obowiązku, dopóki nie potwierdzisz aktualnego wzoru na zus.pl (np. ZAM
+            po zmianach z 24.10.2026).
+          </Text>
+          {formWarnings.map((w) => (
+            <Text key={w} style={styles.meta}>
+              {w}
+            </Text>
+          ))}
+          {benefit.legalBasisNote ? (
+            <Text style={styles.meta}>Źródło: {benefit.legalBasisNote}</Text>
+          ) : null}
+        </Card>
+      ) : null}
 
       <Card>
         <Text style={styles.section}>Dlaczego?</Text>
@@ -160,11 +186,22 @@ export function BenefitDetailScreen() {
         {benefit.procedure ? (
           <>
             {benefit.procedure.formCode ? (
-              <Text style={styles.body}>Formularz: {benefit.procedure.formCode}</Text>
+              <Text style={styles.body}>
+                Formularz główny (z API): {benefit.procedure.formCode}
+              </Text>
             ) : null}
             <Text style={styles.body}>
-              Dokumenty: {benefit.procedure.documents.join(', ') || '—'}
+              Dokumenty z silnika (wymagane vs zależne od sytuacji — wg pola „when”):
             </Text>
+            {benefit.procedure.documents.length > 0 ? (
+              benefit.procedure.documents.map((doc) => (
+                <Text key={doc} style={styles.meta}>
+                  • {doc}
+                </Text>
+              ))
+            ) : (
+              <Text style={styles.meta}>—</Text>
+            )}
             <Text style={styles.body}>
               Gdzie: {benefit.procedure.office ?? 'Do potwierdzenia'}
             </Text>

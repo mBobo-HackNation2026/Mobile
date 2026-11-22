@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { ChoiceChip } from '@/components/ui/ChoiceChip';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LegalDisclaimer } from '@/components/ui/LegalDisclaimer';
 import { Screen } from '@/components/ui/Screen';
 import { TextField } from '@/components/ui/TextField';
 import {
@@ -157,6 +158,7 @@ export function CalculatorScreen() {
             : 'Tryb demonstracyjny — lokalne przykłady, nie wynik silnika.'
         }
       />
+      <LegalDisclaimer />
 
       {mode === 'rest' ? (
         <View style={[styles.stack, twoColumn && styles.stackDesktop]}>
