@@ -1,7 +1,7 @@
 # eBobo — paczka konkursowa (HackNation 2026)
 
 **Nazwa:** eBobo — Zasiłkowy Przewodnik Przyszłego Rodzica  
-**Wersja FE do oddania (po Etap 16):** zobacz `ETAP16_EXCELLENCE_FINAL_REPORT.md` (HEAD)  
+**Wersja FE do oddania (po Etap 17):** zobacz `ETAP17_FRONTEND_RELEASE_READINESS.md` (HEAD)  
 **Branch:** `feature/ebobo-frontend-mvp`
 
 ---
@@ -37,7 +37,7 @@ Jeśli masz lokalny dostęp do materiałów organizatora, porównaj wynik silnik
 |---|---|
 | FE | Expo 58 / RN Web / TypeScript / Expo Router |
 | Stan | Zustand (profil) + TanStack Query (eligibility cache) |
-| BE | FastAPI — eligibility ×9, calculate, compare, explain, auth, mock-zus |
+| BE | FastAPI — eligibility ×9, calculate, compare, explain, formalities, auth, mock-zus |
 | Prawo | Wyłącznie backend (`rules_version`) |
 
 AI (`/legal-advisor/explain`) **wyjaśnia** wynik silnika — nie zmienia statusu.
@@ -90,6 +90,7 @@ Wyjaśnienia na szczegółach / review: „AI nie przyznaje świadczenia”. Fal
 - Brak gwarancji przyznania świadczenia.  
 - Symulacje mObywatel / MockZUS.  
 - Brak dystrybucji chronionych PDF spraw.  
-- `/formalities` — client FE + fallback `procedure`.  
+- `/formalities` — live GET; przy awarii UI korzysta z `procedure` z eligibility.  
+- `missing_fields` — ustrukturyzowane braki → `/complete-data` (mapowanie po `field`).  
 - Znany risk BE: 9 tyg. @70% vs 81,5% (ostrzeżenia FE).  
-- Publiczny stały hosting BE/FE — blocker P0 jeśli niepodłączony.
+- Publiczny stały hosting BE/FE — blocker P0 jeśli niepodłączony (ngrok ≠ produkcja).

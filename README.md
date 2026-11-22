@@ -56,7 +56,7 @@ W `rest`: eligibility / calculate / compare **bez** cichego mocka. Dokumenty: ja
 1. Welcome → „Sprawdź przykładową sprawę” **lub** ankieta.
 2. Wybierz S1 / S2 → oceń świadczenia → oblicz kwotę → eZUS/pracodawca.
 3. `/help` przy stratach / wcześniakach.
-4. Paczka konkursowa: `SUBMISSION.md`, `ETAP16_EXCELLENCE_FINAL_REPORT.md`.
+4. Paczka konkursowa: `SUBMISSION.md`, `ETAP17_FRONTEND_RELEASE_READINESS.md`.
 
 **Chronione PDF spraw ZUS nie są w repozytorium** (zakaz rozpowszechniania).
 

@@ -27,8 +27,8 @@ EXPO_PUBLIC_API_BASE_URL=…   # alias
 | POST | `/api/v1/legal-advisor/explain/{benefit_code}` | wyjaśnienie AI/fallback — ten sam payload co eligibility/check; timeout FE 25s |
 | POST | `/api/v1/benefits/calculate/{benefit_code}` | **live** — kalkulator |
 | POST | `/api/v1/benefits/compare/urlop-rodzicielski` | **live** — 3 warianty |
-| GET | `/api/v1/formalities/{benefit_code}` | opcjonalny — FE client + fallback `procedure` z eligibility |
-| GET | `/api/v1/formalities/general` | opcjonalny — FE client + fallback |
+| GET | `/api/v1/formalities/{benefit_code}` | **live** — `BenefitFormalitiesPanel` (Etap 17); przy błędzie UI pokazuje `procedure` z eligibility |
+| GET | `/api/v1/formalities/general` | **live** — client FE |
 | POST | `/api/v1/documents/analyze` | REST + jawny fallback mock |
 | GET | `/api/v1/knowledge` | REST + jawny fallback mock |
 

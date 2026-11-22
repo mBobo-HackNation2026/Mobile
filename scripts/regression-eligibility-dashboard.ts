@@ -43,6 +43,7 @@ const profile = {
   insuranceStatus: 'insured',
   hasSecondParent: true,
   childrenCount: 1,
+  childrenSurvivedCount: null,
   specialCircumstances: [],
   debtAmountZl: null,
   employmentEndedReason: null,
@@ -138,6 +139,9 @@ const evaluation: EligibilityEvaluation = {
   assumptions: [],
   sourceUrls: [],
   missingInputs: ['Potwierdź status ubezpieczenia chorobowego'],
+  missingFields: [
+    { field: 'insured_at_birth', message: 'Potwierdź status ubezpieczenia chorobowego' },
+  ],
 };
 
 const focusMissing = pickDashboardFocus(evaluation);

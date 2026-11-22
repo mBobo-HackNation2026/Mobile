@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -14,6 +15,7 @@ import {
   type SampleCase,
   type SampleCaseKind,
 } from '@/features/sampleCases/sampleCaseCatalog';
+import { CATALOG_ELIGIBILITY_QUERY_KEY } from '@/hooks/useCatalogEligibility';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, spacing, typography } from '@/theme';
 
@@ -39,6 +41,7 @@ const KIND_TONE: Record<
 export function SampleCasesScreen() {
   const loadDemoScenario = useUserJourneyStore((s) => s.loadDemoScenario);
   const activeId = useUserJourneyStore((s) => s.profile.demoScenarioId);
+  const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selected = useMemo(
@@ -49,6 +52,10 @@ export function SampleCasesScreen() {
   const loadCase = (sample: SampleCase) => {
     if (sample.profileId) {
       loadDemoScenario(sample.profileId);
+      // Nie zostawiaj wyników poprzedniego profilu w cache.
+      void queryClient.invalidateQueries({
+        queryKey: [CATALOG_ELIGIBILITY_QUERY_KEY],
+      });
     }
     setSelectedId(sample.id);
   };

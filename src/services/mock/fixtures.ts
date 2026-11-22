@@ -36,6 +36,7 @@ const baseExtras = {
   daysSinceBurial: null as number | null,
   isFullTimeEmployment: null as boolean | null,
   employmentDurationMonths: null as number | null,
+  childrenSurvivedCount: null as number | null,
 };
 
 export const emptyProfile: ParentProfile = {

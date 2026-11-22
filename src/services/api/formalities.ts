@@ -5,35 +5,43 @@ import { ApiClientError, apiRequest } from '@/services/api/httpClient';
 import { parseApiResponse } from '@/services/api/parse';
 
 /**
- * Kontrakt opcjonalny — brief Etap 15:
  * GET /api/v1/formalities/{benefit_code}
  * GET /api/v1/formalities/general
- *
- * Gdy endpoint niedostępny (404/501), UI korzysta z `procedure` z eligibility.
+ * Kontrakt zsynchronizowany z live OpenAPI (Etap 17).
  */
 
-const FormalityDocumentSchema = z.object({
-  title: z.string(),
+const RequiredDocumentSchema = z.object({
+  code: z.string(),
+  name: z.string(),
   when: z.string().nullable().optional(),
-  required: z.boolean().optional(),
 });
 
-export const FormalitiesResponseSchema = z.object({
-  benefit_code: z.string().optional(),
-  office: z.string().nullable().optional(),
-  submit_by: z.string().nullable().optional(),
-  steps: z.array(z.string()).default([]),
-  documents: z
-    .array(z.union([z.string(), FormalityDocumentSchema]))
-    .default([]),
-  risks: z.array(z.string()).default([]),
-  payer: z.string().nullable().optional(),
+export const BenefitFormalitiesSchema = z.object({
+  benefit_code: z.string(),
+  benefit_name: z.string(),
+  institution: z.string().nullable().optional(),
+  required_documents: z.array(RequiredDocumentSchema).default([]),
+  deadlines: z.array(z.string()).default([]),
+  legal_basis: z.array(z.string()).default([]),
+  general_risks: z.array(z.string()).default([]),
+  employment_protection_note: z.string().nullable().optional(),
+  next_steps: z.array(z.string()).default([]),
+  rules_version: z.union([z.number(), z.string()]).optional(),
 });
 
-export type FormalitiesResponse = z.infer<typeof FormalitiesResponseSchema>;
+export const GeneralFormalitiesSchema = z.object({
+  how_benefits_are_paid: z.string().nullable().optional(),
+  general_risks: z.array(z.string()).default([]),
+  employment_protection_note: z.string().nullable().optional(),
+  charitable_support_note: z.string().nullable().optional(),
+  difficult_situation_benefit_codes: z.array(z.string()).default([]),
+});
 
-export type FormalitiesFetchResult =
-  | { status: 'ok'; data: FormalitiesResponse }
+export type BenefitFormalities = z.infer<typeof BenefitFormalitiesSchema>;
+export type GeneralFormalities = z.infer<typeof GeneralFormalitiesSchema>;
+
+export type FormalitiesFetchResult<T> =
+  | { status: 'ok'; data: T }
   | { status: 'unavailable'; reason: string }
   | { status: 'error'; reason: string };
 
@@ -43,48 +51,80 @@ export const FORMALITIES_PATHS = {
   general: '/api/v1/formalities/general',
 } as const;
 
-async function getFormalities(path: string): Promise<FormalitiesFetchResult> {
+async function getJson(
+  path: string,
+): Promise<{ ok: true; raw: unknown } | { ok: false; result: FormalitiesFetchResult<never> }> {
   if (getApiMode() !== 'rest') {
     return {
-      status: 'unavailable',
-      reason: 'Endpoint formalities wymaga trybu REST.',
+      ok: false,
+      result: {
+        status: 'unavailable',
+        reason: 'Endpoint formalities wymaga trybu REST.',
+      },
     };
   }
 
   try {
     const raw = await apiRequest<unknown>(path, { method: 'GET' });
-    const data = parseApiResponse(
-      FormalitiesResponseSchema,
-      raw,
-      'formalities',
-    );
-    return { status: 'ok', data };
+    return { ok: true, raw };
   } catch (error) {
-    if (error instanceof ApiClientError && (error.status === 404 || error.status === 501)) {
+    if (
+      error instanceof ApiClientError &&
+      (error.status === 404 || error.status === 501)
+    ) {
       return {
-        status: 'unavailable',
-        reason:
-          'Backend nie udostępnia GET /formalities — używamy procedury z oceny uprawnień.',
+        ok: false,
+        result: {
+          status: 'unavailable',
+          reason:
+            'Backend nie udostępnia formalities — używamy procedury z oceny uprawnień.',
+        },
       };
     }
     const message = error instanceof Error ? error.message : String(error);
-    if (/404|501|not found/i.test(message)) {
-      return {
-        status: 'unavailable',
-        reason:
-          'Backend nie udostępnia GET /formalities — używamy procedury z oceny uprawnień.',
-      };
-    }
-    return { status: 'error', reason: message };
+    return { ok: false, result: { status: 'error', reason: message } };
   }
 }
 
-export function fetchFormalitiesForBenefit(
+export async function fetchFormalitiesForBenefit(
   benefitCode: string,
-): Promise<FormalitiesFetchResult> {
-  return getFormalities(FORMALITIES_PATHS.byBenefit(benefitCode));
+): Promise<FormalitiesFetchResult<BenefitFormalities>> {
+  const got = await getJson(FORMALITIES_PATHS.byBenefit(benefitCode));
+  if (!got.ok) return got.result;
+  try {
+    const data = parseApiResponse(
+      BenefitFormalitiesSchema,
+      got.raw,
+      'formalities/benefit',
+    );
+    return { status: 'ok', data };
+  } catch (error) {
+    return {
+      status: 'error',
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
-export function fetchGeneralFormalities(): Promise<FormalitiesFetchResult> {
-  return getFormalities(FORMALITIES_PATHS.general);
+export async function fetchGeneralFormalities(): Promise<
+  FormalitiesFetchResult<GeneralFormalities>
+> {
+  const got = await getJson(FORMALITIES_PATHS.general);
+  if (!got.ok) return got.result;
+  try {
+    const data = parseApiResponse(
+      GeneralFormalitiesSchema,
+      got.raw,
+      'formalities/general',
+    );
+    return { status: 'ok', data };
+  } catch (error) {
+    return {
+      status: 'error',
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
+
+/** @deprecated Alias kompatybilności — preferuj BenefitFormalities. */
+export type FormalitiesResponse = BenefitFormalities;

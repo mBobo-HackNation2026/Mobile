@@ -18,6 +18,7 @@ import {
   CONDITION_TONE,
   shouldOpenAssessmentReview,
 } from '@/features/benefits/benefitUi';
+import { BenefitFormalitiesPanel } from '@/features/benefits/BenefitFormalitiesPanel';
 import { OfficialLinksSection } from '@/features/benefits/OfficialLinksSection';
 import { mentionsRetiredForm } from '@/features/benefits/officialLinks';
 import { resolveBenefitInstitution } from '@/features/benefits/resolveBenefitInstitution';
@@ -198,6 +199,9 @@ export function BenefitDetailScreen() {
       ) : null}
 
       {/* 3. Co należy przygotować? */}
+      {benefitCode ? (
+        <BenefitFormalitiesPanel benefitCode={benefitCode} />
+      ) : null}
       <ProcedureSection benefit={benefit} calm={calm} />
 
       {/* 4. Gdzie załatwisz sprawę? */}

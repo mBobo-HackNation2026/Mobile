@@ -7,6 +7,7 @@ import { ApiClientError } from '@/services/api/httpClient';
 import { mapEligibilityCheckToBenefit } from '@/services/api/mapEligibilityCheckToBenefit';
 import type { EligibilityService } from '@/services/api/types';
 import { MockEligibilityAdapter } from '@/services/mock/MockAdapter';
+import { aggregateMissingFields } from '@/features/profile/missingFields';
 import type { EligibilityEvaluation, ParentProfile } from '@/types/journey';
 
 /**
@@ -31,6 +32,10 @@ export class HybridEligibilityAdapter implements EligibilityService {
         ...base.missingInputs,
         ...live.missing_data,
       ]);
+      const missingFields = aggregateMissingFields([
+        ...(base.missingFields ?? []),
+        ...(live.missing_fields ?? []),
+      ]);
 
       return {
         ...base,
@@ -45,6 +50,7 @@ export class HybridEligibilityAdapter implements EligibilityService {
           ctaHref: maternity.nextStepHref,
         },
         missingInputs,
+        missingFields,
         warnings: [
           'Zasiłek macierzyński: wynik FastAPI (nie decyzja ZUS).',
           'Pozostałe świadczenia i rozszerzenia hubu: mock demonstracyjny.',

@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Badge } from '@/components/ui/Badge';
@@ -12,6 +12,12 @@ import { LegalDisclaimer } from '@/components/ui/LegalDisclaimer';
 import { Screen } from '@/components/ui/Screen';
 import { ProfileAnswersReview } from '@/features/benefits/ProfileAnswersReview';
 import {
+  MISSING_FIELD_LABEL,
+  isKnownMissingFieldId,
+  partitionMissingFields,
+  type KnownMissingFieldId,
+} from '@/features/profile/missingFields';
+import {
   catalogEligibilityQueryKey,
   CATALOG_ELIGIBILITY_QUERY_KEY,
   useCatalogEligibility,
@@ -22,8 +28,8 @@ import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, spacing, typography } from '@/theme';
 
 /**
- * Uzupełnianie danych wpływających na ocenę — bez heurystycznego parsowania missing_data.
- * Po zapisie: unieważnienie katalogu + ponowna ocena 9 świadczeń.
+ * Uzupełnianie danych — mapowanie po `missing_fields[].field` (bez heurystyki message).
+ * Po zapisie: invalidate + ponowna ocena katalogu 9.
  */
 export function CompleteDataScreen() {
   const profile = useUserJourneyStore((s) => s.profile);
@@ -33,6 +39,16 @@ export function CompleteDataScreen() {
     useCatalogEligibility();
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const aggregated = evaluation?.missingFields ?? [];
+  const { known, unknown } = useMemo(
+    () => partitionMissingFields(aggregated),
+    [aggregated],
+  );
+  const priorityFields = useMemo(
+    () => known.map((f) => f.field as KnownMissingFieldId),
+    [known],
+  );
 
   if (!profile.onboardingCompleted) {
     return (
@@ -46,8 +62,6 @@ export function CompleteDataScreen() {
       </Screen>
     );
   }
-
-  const missing = evaluation?.missingInputs ?? [];
 
   const onApplyAndRecheck = async (patch: Partial<typeof profile>) => {
     setSaving(true);
@@ -76,20 +90,19 @@ export function CompleteDataScreen() {
     <Screen
       title="Uzupełnij dane"
       subtitle="Dokładniejsza ocena uprawnień"
-      backFallbackHref="/home"
+      backFallbackHref="/benefits"
     >
       <DemoBanner message="Uzupełnij tylko to, czego potrzebujemy do oceny. Nie zgadujemy pól automatycznie." />
 
       <Card>
         <Text style={styles.title}>Możemy dokładniej sprawdzić Twoje uprawnienia</Text>
         <Text style={styles.body}>
-          Do oceny części świadczeń potrzebujemy jeszcze kilku informacji. Uzupełnij
-          je, aby otrzymać bardziej szczegółowy wynik. To nie jest decyzja ZUS.
+          Braki pochodzą z silnika jako stabilne identyfikatory pól. To nie jest decyzja ZUS.
         </Text>
       </Card>
 
       <Card>
-        <Text style={styles.section}>Czego brakuje według silnika?</Text>
+        <Text style={styles.section}>Czego potrzebujemy?</Text>
         {isLoading && !evaluation ? (
           <Text style={styles.meta}>Ładowanie oceny…</Text>
         ) : isError && !evaluation ? (
@@ -99,22 +112,39 @@ export function CompleteDataScreen() {
             </Text>
             <Button label="Spróbuj ponownie" onPress={() => refetch()} />
           </>
-        ) : missing.length === 0 ? (
+        ) : aggregated.length === 0 ? (
           <Text style={styles.body}>
-            Silnik nie zgłasza obecnie brakujących informacji w zbiorczej ocenie.
-            Możesz mimo to skorygować odpowiedzi poniżej.
+            Silnik nie zgłasza obecnie brakujących informacji. Możesz mimo to
+            skorygować odpowiedzi poniżej.
           </Text>
         ) : (
           <>
-            <Text style={styles.meta}>
-              Poniżej dokładne komunikaty `missing_data` (bez mapowania na pola).
-            </Text>
-            {missing.map((item) => (
-              <View key={item} style={styles.missingRow}>
-                <Badge label="Brak" tone="warning" />
-                <Text style={styles.missingText}>{item}</Text>
+            {known.map((item) => (
+              <View key={item.field} style={styles.missingRow}>
+                <Badge label="Do uzupełnienia" tone="warning" />
+                <Text style={styles.missingText}>
+                  {isKnownMissingFieldId(item.field)
+                    ? MISSING_FIELD_LABEL[item.field]
+                    : item.field}
+                </Text>
+                <Text style={styles.meta}>{item.message}</Text>
               </View>
             ))}
+            {unknown.length > 0 ? (
+              <View style={styles.unknownBox}>
+                <Badge label="Nieznane pole" tone="neutral" />
+                <Text style={styles.body}>
+                  Silnik wskazał identyfikatory, których ten formularz jeszcze nie
+                  mapuje. Możesz uzupełnić je w pełnej ankiecie albo skorygować
+                  odpowiedzi poniżej.
+                </Text>
+                {unknown.map((item) => (
+                  <Text key={item.field} style={styles.meta}>
+                    • {item.field}: {item.message}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
           </>
         )}
       </Card>
@@ -122,6 +152,8 @@ export function CompleteDataScreen() {
       <ProfileAnswersReview
         profile={profile}
         busy={saving || isFetching}
+        priorityFields={priorityFields}
+        startEditing={priorityFields.length > 0}
         onApplyAndRecheck={(patch) => {
           void onApplyAndRecheck(patch);
         }}
@@ -157,7 +189,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   meta: { ...typography.small, color: colors.textMuted, marginBottom: spacing.sm },
-  missingRow: { gap: spacing.xs, marginBottom: spacing.sm },
-  missingText: { ...typography.body, color: colors.textSecondary },
+  missingRow: { gap: spacing.xxs, marginBottom: spacing.md },
+  missingText: { ...typography.bodyStrong, color: colors.text },
+  unknownBox: { gap: spacing.xs, marginTop: spacing.sm },
   error: { ...typography.body, color: colors.danger, marginBottom: spacing.sm },
 });

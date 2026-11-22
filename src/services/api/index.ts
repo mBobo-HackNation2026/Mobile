@@ -95,9 +95,12 @@ export {
   FORMALITIES_PATHS,
 } from '@/services/api/formalities';
 export type {
+  BenefitFormalities,
   FormalitiesFetchResult,
   FormalitiesResponse,
+  GeneralFormalities,
 } from '@/services/api/formalities';
+export type { MissingFieldInfoApi } from '@/services/api/eligibilityCheckSchemas';
 export {
   explainBenefitEligibility,
   isExplainStatusAligned,

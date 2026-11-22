@@ -9,6 +9,7 @@ import {
 import { ApiClientError } from '@/services/api/httpClient';
 import { mapEligibilityCheckToBenefit } from '@/services/api/mapEligibilityCheckToBenefit';
 import type { EligibilityService } from '@/services/api/types';
+import { aggregateMissingFields } from '@/features/profile/missingFields';
 import type { BenefitAssessment } from '@/types/benefits';
 import type { EligibilityEvaluation, ParentProfile } from '@/types/journey';
 
@@ -44,6 +45,7 @@ export class CatalogEligibilityAdapter implements EligibilityService {
 
     const benefits: BenefitAssessment[] = [];
     const missingInputs: string[] = [];
+    const missingFieldsRaw: Array<{ field: string; message: string }> = [];
     const warnings: string[] = [
       'Ocena pochodzi z FastAPI — to nie jest decyzja ZUS ani gwarancja wypłaty.',
       'Deklaracja z ankiety nie jest potwierdzeniem danych ZUS.',
@@ -57,6 +59,9 @@ export class CatalogEligibilityAdapter implements EligibilityService {
         const mapped = mapEligibilityCheckToBenefit(item.value, profile);
         benefits.push(mapped);
         missingInputs.push(...item.value.missing_data);
+        if (item.value.missing_fields?.length) {
+          missingFieldsRaw.push(...item.value.missing_fields);
+        }
         warnings.push(...item.value.warnings);
         rulesVersions.add(item.value.rules_version);
         assumptions.push(
@@ -103,6 +108,7 @@ export class CatalogEligibilityAdapter implements EligibilityService {
       assumptions: unique(assumptions),
       sourceUrls: ['https://www.zus.pl'],
       missingInputs: unique(missingInputs),
+      missingFields: aggregateMissingFields(missingFieldsRaw),
     };
   }
 }

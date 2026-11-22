@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ChoiceChip } from '@/components/ui/ChoiceChip';
 import { TextField } from '@/components/ui/TextField';
+import type { KnownMissingFieldId } from '@/features/profile/missingFields';
 import { colors, spacing, typography } from '@/theme';
 import {
   EMPLOYMENT_LABELS,
@@ -21,18 +23,25 @@ type Draft = {
   employmentType: EmploymentType | null;
   insuranceStatus: InsuranceStatus | null;
   childrenCount: string;
+  childrenSurvivedCount: string;
   childAgeMonths: string;
   fatherInsured: Tri;
   zaZyciemCertificate: Tri;
   fullDoseClaimedWithin21Days: Tri;
+  isFullTimeEmployment: Tri;
   debtAmountZl: string;
   insuredDaysContinuous: string;
   otherParentUsedParentalLeaveWeeks: string;
+  childHospitalizationWeeks: string;
+  gestationalWeekAtBirth: string;
 };
 
 type Props = {
   profile: ParentProfile;
   busy?: boolean;
+  /** Pola z missing_fields — wyróżnione i otwarte do edycji. */
+  priorityFields?: KnownMissingFieldId[];
+  startEditing?: boolean;
   onApplyAndRecheck: (patch: Partial<ParentProfile>) => void;
 };
 
@@ -59,11 +68,16 @@ function profileToDraft(profile: ParentProfile): Draft {
     employmentType: profile.employmentType,
     insuranceStatus: profile.insuranceStatus,
     childrenCount: profile.childrenCount != null ? String(profile.childrenCount) : '1',
+    childrenSurvivedCount:
+      profile.childrenSurvivedCount != null
+        ? String(profile.childrenSurvivedCount)
+        : '',
     childAgeMonths:
       profile.childAgeMonths != null ? String(profile.childAgeMonths) : '',
     fatherInsured: triFromBool(profile.fatherInsured),
     zaZyciemCertificate: triFromBool(profile.zaZyciemCertificate),
     fullDoseClaimedWithin21Days: triFromBool(profile.fullDoseClaimedWithin21Days),
+    isFullTimeEmployment: triFromBool(profile.isFullTimeEmployment),
     debtAmountZl: profile.debtAmountZl != null ? String(profile.debtAmountZl) : '',
     insuredDaysContinuous:
       profile.insuredDaysContinuous != null
@@ -73,7 +87,22 @@ function profileToDraft(profile: ParentProfile): Draft {
       profile.otherParentUsedParentalLeaveWeeks != null
         ? String(profile.otherParentUsedParentalLeaveWeeks)
         : '',
+    childHospitalizationWeeks:
+      profile.childHospitalizationWeeks != null
+        ? String(profile.childHospitalizationWeeks)
+        : '',
+    gestationalWeekAtBirth:
+      profile.gestationalWeekAtBirth != null
+        ? String(profile.gestationalWeekAtBirth)
+        : '',
   };
+}
+
+function parseOptionalInt(raw: string): number | null {
+  const t = raw.trim();
+  if (!t) return null;
+  const n = Number.parseInt(t, 10);
+  return Number.isFinite(n) ? n : null;
 }
 
 /**
@@ -82,10 +111,21 @@ function profileToDraft(profile: ParentProfile): Draft {
 export function ProfileAnswersReview({
   profile,
   busy = false,
+  priorityFields = [],
+  startEditing = false,
   onApplyAndRecheck,
 }: Props) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(startEditing);
   const [draft, setDraft] = useState<Draft>(() => profileToDraft(profile));
+
+  useEffect(() => {
+    if (startEditing) {
+      setDraft(profileToDraft(profile));
+      setEditing(true);
+    }
+  }, [startEditing, profile]);
+
+  const needs = (id: KnownMissingFieldId) => priorityFields.includes(id);
 
   const summaryRows = useMemo(
     () => [
@@ -156,7 +196,17 @@ export function ProfileAnswersReview({
         zmienia wyniku — tylko wyjaśnia.
       </Text>
 
-      <Text style={styles.fieldLabel}>Ubezpieczenie chorobowe</Text>
+      {priorityFields.length > 0 ? (
+        <Text style={styles.body}>
+          Najpierw uzupełnij pola oznaczone „Potrzebne” — pochodzą z
+          missing_fields silnika.
+        </Text>
+      ) : null}
+
+      <FieldLabel
+        label="Ubezpieczenie chorobowe"
+        needed={needs('insured_at_birth')}
+      />
       <View style={styles.chips}>
         {(
           [
@@ -174,7 +224,10 @@ export function ProfileAnswersReview({
         ))}
       </View>
 
-      <Text style={styles.fieldLabel}>Forma zatrudnienia</Text>
+      <FieldLabel
+        label="Forma zatrudnienia"
+        needed={needs('insurance_title')}
+      />
       <View style={styles.chips}>
         {(
           [
@@ -195,9 +248,13 @@ export function ProfileAnswersReview({
         ))}
       </View>
 
-      {draft.employmentType === 'self_employed' ? (
+      {draft.employmentType === 'self_employed' || needs('debt_amount_zl') ? (
         <TextField
-          label="Zadłużenie składkowe (zł)"
+          label={
+            needs('debt_amount_zl')
+              ? 'Zadłużenie składkowe (zł) — potrzebne'
+              : 'Zadłużenie składkowe (zł)'
+          }
           value={draft.debtAmountZl}
           onChangeText={(debtAmountZl) => setDraft((d) => ({ ...d, debtAmountZl }))}
           keyboardType="numeric"
@@ -206,14 +263,33 @@ export function ProfileAnswersReview({
       ) : null}
 
       <TextField
-        label="Liczba dzieci"
+        label={
+          needs('children_count') ? 'Liczba dzieci — potrzebne' : 'Liczba dzieci'
+        }
         value={draft.childrenCount}
         onChangeText={(childrenCount) => setDraft((d) => ({ ...d, childrenCount }))}
         keyboardType="numeric"
       />
 
+      {(needs('children_survived_count') ||
+        profile.isStillbirthOrInfantDeath === true) && (
+        <TextField
+          label="Liczba dzieci pozostałych przy życiu — potrzebne przy stracie"
+          value={draft.childrenSurvivedCount}
+          onChangeText={(childrenSurvivedCount) =>
+            setDraft((d) => ({ ...d, childrenSurvivedCount }))
+          }
+          keyboardType="numeric"
+          placeholder="np. 0 lub 1"
+        />
+      )}
+
       <TextField
-        label="Wiek dziecka (miesiące)"
+        label={
+          needs('child_age_months')
+            ? 'Wiek dziecka (miesiące) — potrzebne'
+            : 'Wiek dziecka (miesiące)'
+        }
         value={draft.childAgeMonths}
         onChangeText={(childAgeMonths) =>
           setDraft((d) => ({ ...d, childAgeMonths }))
@@ -222,13 +298,19 @@ export function ProfileAnswersReview({
         placeholder="np. 1"
       />
 
-      <Text style={styles.fieldLabel}>Drugi rodzic ubezpieczony</Text>
+      <FieldLabel
+        label="Drugi rodzic ubezpieczony"
+        needed={needs('father_insured')}
+      />
       <TriChips
         value={draft.fatherInsured}
         onChange={(fatherInsured) => setDraft((d) => ({ ...d, fatherInsured }))}
       />
 
-      <Text style={styles.fieldLabel}>Zaświadczenie „Za życiem”</Text>
+      <FieldLabel
+        label="Zaświadczenie „Za życiem”"
+        needed={needs('za_zyciem_certificate')}
+      />
       <TriChips
         value={draft.zaZyciemCertificate}
         onChange={(zaZyciemCertificate) =>
@@ -236,7 +318,10 @@ export function ProfileAnswersReview({
         }
       />
 
-      <Text style={styles.fieldLabel}>Pełny wymiar zgłoszony w 21 dni</Text>
+      <FieldLabel
+        label="Pełny wymiar zgłoszony w 21 dni"
+        needed={needs('full_dose_claimed_within_21_days')}
+      />
       <TriChips
         value={draft.fullDoseClaimedWithin21Days}
         onChange={(fullDoseClaimedWithin21Days) =>
@@ -244,8 +329,23 @@ export function ProfileAnswersReview({
         }
       />
 
+      <FieldLabel
+        label="Zatrudnienie w pełnym wymiarze"
+        needed={needs('is_full_time_employment')}
+      />
+      <TriChips
+        value={draft.isFullTimeEmployment}
+        onChange={(isFullTimeEmployment) =>
+          setDraft((d) => ({ ...d, isFullTimeEmployment }))
+        }
+      />
+
       <TextField
-        label="Dni ciągłego ubezpieczenia"
+        label={
+          needs('insured_days_continuous')
+            ? 'Dni ciągłego ubezpieczenia — potrzebne'
+            : 'Dni ciągłego ubezpieczenia'
+        }
         value={draft.insuredDaysContinuous}
         onChangeText={(insuredDaysContinuous) =>
           setDraft((d) => ({ ...d, insuredDaysContinuous }))
@@ -255,7 +355,11 @@ export function ProfileAnswersReview({
       />
 
       <TextField
-        label="Tygodnie urlopu rodzicielskiego drugiego rodzica"
+        label={
+          needs('other_parent_used_parental_leave_weeks')
+            ? 'Tygodnie urlopu rodzicielskiego drugiego rodzica — potrzebne'
+            : 'Tygodnie urlopu rodzicielskiego drugiego rodzica'
+        }
         value={draft.otherParentUsedParentalLeaveWeeks}
         onChangeText={(otherParentUsedParentalLeaveWeeks) =>
           setDraft((d) => ({ ...d, otherParentUsedParentalLeaveWeeks }))
@@ -263,6 +367,28 @@ export function ProfileAnswersReview({
         keyboardType="numeric"
         placeholder="opcjonalnie"
       />
+
+      {(needs('child_hospitalization_weeks') ||
+        needs('gestational_week_at_birth')) && (
+        <>
+          <TextField
+            label="Tygodnie hospitalizacji dziecka"
+            value={draft.childHospitalizationWeeks}
+            onChangeText={(childHospitalizationWeeks) =>
+              setDraft((d) => ({ ...d, childHospitalizationWeeks }))
+            }
+            keyboardType="numeric"
+          />
+          <TextField
+            label="Tydzień ciąży w momencie porodu"
+            value={draft.gestationalWeekAtBirth}
+            onChangeText={(gestationalWeekAtBirth) =>
+              setDraft((d) => ({ ...d, gestationalWeekAtBirth }))
+            }
+            keyboardType="numeric"
+          />
+        </>
+      )}
 
       <View style={styles.actions}>
         <Button
@@ -275,32 +401,23 @@ export function ProfileAnswersReview({
           label={busy ? 'Ponowna ocena…' : 'Zapisz i oceń ponownie'}
           onPress={() => {
             const children = Number.parseInt(draft.childrenCount, 10);
-            const childMonths = draft.childAgeMonths.trim()
-              ? Number.parseInt(draft.childAgeMonths, 10)
-              : null;
             const debt = draft.debtAmountZl.trim()
               ? Number.parseFloat(draft.debtAmountZl.replace(',', '.'))
-              : null;
-            const insuredDays = draft.insuredDaysContinuous.trim()
-              ? Number.parseInt(draft.insuredDaysContinuous, 10)
-              : null;
-            const otherWeeks = draft.otherParentUsedParentalLeaveWeeks.trim()
-              ? Number.parseInt(draft.otherParentUsedParentalLeaveWeeks, 10)
               : null;
 
             onApplyAndRecheck({
               employmentType: draft.employmentType,
               insuranceStatus: draft.insuranceStatus,
-              childrenCount: Number.isFinite(children) && children >= 1 ? children : 1,
-              childAgeMonths:
-                childMonths != null && Number.isFinite(childMonths)
-                  ? childMonths
-                  : null,
+              childrenCount:
+                Number.isFinite(children) && children >= 1 ? children : 1,
+              childrenSurvivedCount: parseOptionalInt(draft.childrenSurvivedCount),
+              childAgeMonths: parseOptionalInt(draft.childAgeMonths),
               fatherInsured: triToBool(draft.fatherInsured),
               zaZyciemCertificate: triToBool(draft.zaZyciemCertificate),
               fullDoseClaimedWithin21Days: triToBool(
                 draft.fullDoseClaimedWithin21Days,
               ),
+              isFullTimeEmployment: triToBool(draft.isFullTimeEmployment),
               debtAmountZl:
                 draft.employmentType === 'self_employed' &&
                 debt != null &&
@@ -309,14 +426,16 @@ export function ProfileAnswersReview({
                   : draft.employmentType === 'self_employed'
                     ? 0
                     : profile.debtAmountZl,
-              insuredDaysContinuous:
-                insuredDays != null && Number.isFinite(insuredDays)
-                  ? insuredDays
-                  : null,
-              otherParentUsedParentalLeaveWeeks:
-                otherWeeks != null && Number.isFinite(otherWeeks)
-                  ? otherWeeks
-                  : null,
+              insuredDaysContinuous: parseOptionalInt(draft.insuredDaysContinuous),
+              otherParentUsedParentalLeaveWeeks: parseOptionalInt(
+                draft.otherParentUsedParentalLeaveWeeks,
+              ),
+              childHospitalizationWeeks: parseOptionalInt(
+                draft.childHospitalizationWeeks,
+              ),
+              gestationalWeekAtBirth: parseOptionalInt(
+                draft.gestationalWeekAtBirth,
+              ),
             });
             setEditing(false);
           }}
@@ -325,6 +444,21 @@ export function ProfileAnswersReview({
         />
       </View>
     </Card>
+  );
+}
+
+function FieldLabel({
+  label,
+  needed,
+}: {
+  label: string;
+  needed?: boolean;
+}) {
+  return (
+    <View style={styles.fieldLabelRow}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      {needed ? <Badge label="Potrzebne" tone="warning" /> : null}
+    </View>
   );
 }
 
@@ -365,11 +499,17 @@ const styles = StyleSheet.create({
   row: { marginBottom: spacing.sm, gap: spacing.xxs },
   rowLabel: { ...typography.small, color: colors.textMuted },
   rowValue: { ...typography.bodyStrong, color: colors.text },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
   fieldLabel: {
     ...typography.bodyStrong,
     color: colors.text,
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
   },
   chips: { gap: spacing.xs, marginBottom: spacing.sm },
   actions: { gap: spacing.sm, marginTop: spacing.md },

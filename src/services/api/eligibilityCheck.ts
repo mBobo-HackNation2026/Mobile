@@ -161,6 +161,7 @@ export function profileToEligibilityCheckRequest(
 
   body.days_since_death = profile.daysSinceDeath ?? null;
   body.days_since_burial = profile.daysSinceBurial ?? null;
+  body.children_survived_count = profile.childrenSurvivedCount ?? null;
   body.is_full_time_employment = triState(profile.isFullTimeEmployment ?? null);
   body.employment_duration_months = profile.employmentDurationMonths ?? null;
 

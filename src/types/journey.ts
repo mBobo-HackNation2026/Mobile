@@ -53,6 +53,11 @@ export interface ParentProfile {
   insuranceStatus: InsuranceStatus | null;
   hasSecondParent: boolean | null;
   childrenCount: number | null;
+  /**
+   * Liczba dzieci z tego samego porodu pozostałych przy życiu.
+   * Istotne przy martwym urodzeniu / śmierci i children_count > 1 (`children_survived_count`).
+   */
+  childrenSurvivedCount: number | null;
   specialCircumstances: string[];
   /** Zadłużenie składkowe (PLN) — tylko gdy dotyczy działalności. */
   debtAmountZl: number | null;
@@ -138,7 +143,10 @@ export interface EligibilityEvaluation {
   warnings: string[];
   assumptions: string[];
   sourceUrls: string[];
+  /** Legacy: teksty missing_data (dedup). */
   missingInputs: string[];
+  /** Ustrukturyzowane braki z API — dedup po `field`. */
+  missingFields: Array<{ field: string; message: string }>;
 }
 
 export const STAGE_LABELS: Record<ParentStage, string> = {

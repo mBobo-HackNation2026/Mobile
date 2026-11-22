@@ -78,6 +78,8 @@ const nullableNumberOrString = z
 /** Request wspólny dla eligibility/check i benefits/calculate (OpenAPI). */
 export const maternityLeaveEligibilityRequestSchema = z.object({
   children_count: z.number().int().min(1),
+  /** Liczba dzieci pozostałych przy życiu — istotne przy martwym urodzeniu / śmierci i children_count > 1. */
+  children_survived_count: z.number().int().min(0).nullable().optional(),
   insured_at_birth: nullableBool,
   insurance_title: insuranceTitleSchema.nullable().optional(),
   debt_amount_zl: nullableNumberOrString,
@@ -142,6 +144,11 @@ export const benefitPlanSchema = z.object({
   legal_basis: z.array(z.string()).default([]),
 });
 
+export const missingFieldInfoSchema = z.object({
+  field: z.string(),
+  message: z.string(),
+});
+
 export const eligibilityResultSchema = z.object({
   benefit_code: z.string(),
   benefit_name: z.string(),
@@ -149,6 +156,8 @@ export const eligibilityResultSchema = z.object({
   met_conditions: z.array(z.string()).default([]),
   unmet_conditions: z.array(z.string()).default([]),
   missing_data: z.array(z.string()).default([]),
+  /** Stabilne ID pól — FE mapuje bez parsowania polskiego tekstu. */
+  missing_fields: z.array(missingFieldInfoSchema).default([]),
   possible_solutions: z.array(possibleSolutionSchema).default([]),
   plan: benefitPlanSchema.nullable(),
   rules_version: z.number().int(),
@@ -164,6 +173,7 @@ export type MaternityLeaveEligibilityRequest = z.infer<
   typeof maternityLeaveEligibilityRequestSchema
 >;
 export type EligibilityCheckResult = z.infer<typeof eligibilityResultSchema>;
+export type MissingFieldInfoApi = z.infer<typeof missingFieldInfoSchema>;
 export type BenefitPlan = z.infer<typeof benefitPlanSchema>;
 export type PossibleSolution = z.infer<typeof possibleSolutionSchema>;
 

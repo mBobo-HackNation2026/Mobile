@@ -959,6 +959,7 @@ export class MockEligibilityAdapter implements EligibilityService {
       ],
       sourceUrls: [...OFFICIAL_SOURCES],
       missingInputs,
+      missingFields: [],
     };
   }
 }
