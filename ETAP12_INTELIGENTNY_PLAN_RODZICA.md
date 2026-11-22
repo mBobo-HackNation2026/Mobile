@@ -169,11 +169,11 @@ Po uzupełnieniu danych: invalidate + `fetchQuery` na nowym profilu → Plan i l
 
 | Commit | Opis |
 |---|---|
+| `1f94698` | Inteligentny Plan + complete-data + shared eligibility |
 | `7dd6ecb` | Review flow + Etap 11 audit (zabezpieczenie) |
-| *(ten etap)* | Inteligentny Plan + complete-data + shared eligibility |
-| Bazowy wcześniej | `fa0f086` |
+| `fa0f086` | Bazowy przed Etapem 12 |
 
-Aktualny HEAD po commitcie Etapu 12: uzupełnij `git log -1 --oneline`.
+**HEAD:** `1f94698`
 
 ---
 
