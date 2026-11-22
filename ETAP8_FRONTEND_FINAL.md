@@ -3,7 +3,7 @@
 **Data:** 2026-11-22  
 **Gałąź:** `feature/ebobo-frontend-mvp`  
 **Bazowy commit:** `ece9f3f` (Etap 7)  
-**Commit Etapu 8:** `c93427d`  
+**Commit Etapu 8 (kod + raport):** `5ec1e89`  
 
 **Werdykt:** frontend gotowy do demonstracji jury przy działającym FastAPI. W trakcie Etapu 8 tunel ngrok zwracał **HTTP 502** — ścieżka użytkownika, stany błędów i lokalny plan DEMO działają; live calculate/compare nie dało się ponownie potwierdzić w tej sesji (referencja: Etap 7 PASS).
 
@@ -142,7 +142,8 @@ Android/iOS: **nie testowano** w Etapie 8.
 
 ## 8. Numer commita
 
-`c93427d` — `fix(etap8): stabilize calculator presentation and jury demo readiness`
+`5ec1e89` — `fix(etap8): stabilize calculator presentation and jury demo readiness`  
+(aktualizacja numeru w tym pliku może być w kolejnym mikro-commicie docs)
 
 ---
 
