@@ -13,11 +13,14 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Screen } from '@/components/ui/Screen';
 import { TextField } from '@/components/ui/TextField';
 import {
-  NON_TRANSFERABLE_PARENT_NOTE,
-  UNVERIFIED_AMOUNT_NOTE,
-  hasUnverifiedRateWarning,
-  rateVariantLabel,
-} from '@/features/calculator/calculatorPresentation';
+  CalculatorComparePanel,
+  CalculatorDetailsPanel,
+  CalculatorErrorPanel,
+  CalculatorResultHero,
+  CalculatorSection,
+} from '@/features/calculator/CalculatorPanels';
+import { parseOptionalNumber } from '@/features/calculator/calculatorFormat';
+import { rateVariantLabel } from '@/features/calculator/calculatorPresentation';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import {
@@ -35,9 +38,6 @@ import {
 } from '@/services/api';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, spacing, typography } from '@/theme';
-
-const SIMULATION_DISCLAIMER =
-  'To symulacja kwoty przy przyjętych założeniach. Nie oznacza potwierdzenia prawa do świadczenia.';
 
 export function CalculatorScreen() {
   const params = useLocalSearchParams<{ benefit?: string }>();
@@ -123,7 +123,6 @@ export function CalculatorScreen() {
     },
   });
 
-  /** Po zmianie profilu nie pokazuj starej kwoty jako aktualnej. */
   useEffect(() => {
     setCalcResult(null);
     setCompareResult(null);
@@ -143,11 +142,12 @@ export function CalculatorScreen() {
   }
 
   const mockResult = mode !== 'rest' ? calcMutation.data : null;
+  const twoColumn = columns > 1;
 
   return (
     <Screen
       title="Kalkulator świadczeń"
-      subtitle="Kwoty i okresy pochodzą z silnika. Aplikacja nie przelicza stawek samodzielnie."
+      subtitle="Profesjonalny szacunek kwot i wariantów — wyłącznie z silnika FastAPI."
     >
       <ApiHealthBanner />
       <DemoBanner
@@ -158,170 +158,205 @@ export function CalculatorScreen() {
         }
       />
 
-      <Card>
-        <Text style={styles.disclaimer}>{SIMULATION_DISCLAIMER}</Text>
-        <Text style={styles.meta}>{rateVariantLabel(fullDose21)}</Text>
-      </Card>
-
-      <View style={styles.headerMeta}>
-        <Badge
-          label={mode === 'rest' ? 'Silnik online' : 'Demo lokalne'}
-          tone="primary"
-        />
-      </View>
-
       {mode === 'rest' ? (
-        <>
-          <Text style={styles.section}>Świadczenie</Text>
-          <View style={styles.chips}>
-            {BENEFIT_CODES.map((code) => (
-              <ChoiceChip
-                key={code}
-                label={shortLabel(code)}
-                selected={benefitCode === code}
-                onPress={() => {
-                  setBenefitCode(code);
-                  setCalcResult(null);
-                }}
-              />
-            ))}
-          </View>
+        <View style={[styles.stack, twoColumn && styles.stackDesktop]}>
+          <View style={[styles.column, twoColumn && styles.columnLeft]}>
+            <CalculatorSection
+              step="A"
+              title="Twoje dane"
+              subtitle="Założenia do symulacji — nie potwierdzenie danych ZUS."
+            >
+              <Card style={styles.formCard}>
+                <View style={styles.formMeta}>
+                  <Badge
+                    label={mode === 'rest' ? 'Silnik online' : 'Demo'}
+                    tone="primary"
+                  />
+                  <Text style={styles.meta}>{rateVariantLabel(fullDose21)}</Text>
+                </View>
 
-          <Card>
-            <Text style={styles.section}>Dane do kalkulacji</Text>
-            <Text style={styles.body}>
-              To Twoje założenia do symulacji — nie potwierdzenie danych ZUS.
-            </Text>
-            <TextField
-              label="Średni miesięczny dochód / wynagrodzenie (PLN)"
-              value={incomeA}
-              onChangeText={setIncomeA}
-              keyboardType="numeric"
-              hint="Potrzebne do kwot procentowych. Puste pole = silnik może nie zwrócić kwoty."
-            />
-            <ChoiceChip
-              label={fullTime ? 'Pełny etat: TAK' : 'Pełny etat: NIE / nie wiem'}
-              selected={fullTime}
-              onPress={() => setFullTime((v) => !v)}
-            />
-            <ChoiceChip
-              label={
-                zaZyciem
-                  ? 'Zaświadczenie „Za życiem”: TAK'
-                  : 'Zaświadczenie „Za życiem”: NIE'
-              }
-              selected={zaZyciem}
-              onPress={() => setZaZyciem((v) => !v)}
-            />
-            <ChoiceChip
-              label={
-                fullDose21
-                  ? 'Wariant 81,5% (wniosek o pełny wymiar w 21 dni): TAK'
-                  : 'Wariant 100% / 70% (bez wniosku o pełny wymiar w 21 dni)'
-              }
-              selected={fullDose21}
-              onPress={() => setFullDose21((v) => !v)}
-            />
-            <Button
-              label={
-                calcMutation.isPending
-                  ? 'Liczymy…'
-                  : `Policz: ${BENEFIT_CODE_LABEL[benefitCode]}`
-              }
-              onPress={() => calcMutation.mutate()}
-              disabled={calcMutation.isPending}
-              fullWidth={isCompact}
-            />
-            {calcMutation.isError ? (
-              <View style={styles.errorBlock}>
-                <Text style={styles.error}>
-                  {apiErrorMessage(
-                    calcMutation.error,
-                    'Nie udało się policzyć kwoty. Nie pokazujemy przykładowego wyniku.',
-                  )}
-                </Text>
+                <Text style={styles.fieldLabel}>Świadczenie</Text>
+                <View style={styles.chips}>
+                  {BENEFIT_CODES.map((code) => (
+                    <ChoiceChip
+                      key={code}
+                      label={shortLabel(code)}
+                      selected={benefitCode === code}
+                      onPress={() => {
+                        setBenefitCode(code);
+                        setCalcResult(null);
+                      }}
+                    />
+                  ))}
+                </View>
+
+                <TextField
+                  label="Średni miesięczny dochód / wynagrodzenie"
+                  value={incomeA}
+                  onChangeText={setIncomeA}
+                  keyboardType="numeric"
+                  hint="W PLN. Puste pole = silnik może nie zwrócić kwoty procentowej."
+                />
+
+                <View style={styles.toggleGroup}>
+                  <ChoiceChip
+                    label={fullTime ? 'Pełny etat' : 'Niepełny etat / nie wiem'}
+                    selected={fullTime}
+                    onPress={() => setFullTime((v) => !v)}
+                  />
+                  <ChoiceChip
+                    label={
+                      zaZyciem ? '„Za życiem”: tak' : '„Za życiem”: nie'
+                    }
+                    selected={zaZyciem}
+                    onPress={() => setZaZyciem((v) => !v)}
+                  />
+                  <ChoiceChip
+                    label={
+                      fullDose21
+                        ? 'Wariant 81,5% (wniosek w 21 dni)'
+                        : 'Wariant 100% / 70%'
+                    }
+                    selected={fullDose21}
+                    onPress={() => setFullDose21((v) => !v)}
+                  />
+                </View>
+
                 <Button
-                  label="Spróbuj ponownie"
-                  variant="secondary"
+                  label={
+                    calcMutation.isPending
+                      ? 'Liczymy…'
+                      : `Policz: ${BENEFIT_CODE_LABEL[benefitCode]}`
+                  }
                   onPress={() => calcMutation.mutate()}
                   disabled={calcMutation.isPending}
+                  fullWidth
                 />
-              </View>
-            ) : null}
-          </Card>
 
-          {calcResult ? (
-            <CalculatedAmountCard result={calcResult} fullDose21={fullDose21} />
-          ) : null}
+                {calcMutation.isError ? (
+                  <CalculatorErrorPanel
+                    message={apiErrorMessage(
+                      calcMutation.error,
+                      'Nie udało się policzyć kwoty. Nie pokazujemy przykładowego wyniku.',
+                    )}
+                    onRetry={() => calcMutation.mutate()}
+                    pending={calcMutation.isPending}
+                  />
+                ) : null}
+              </Card>
+            </CalculatorSection>
+          </View>
 
-          <Card>
-            <Text style={styles.section}>Porównanie urlopu rodzicielskiego</Text>
-            <Text style={styles.body}>
-              Trzy warianty podziału z silnika. Nie oznaczamy automatycznie „najlepszego”.
-            </Text>
-            <Text style={styles.callout}>{NON_TRANSFERABLE_PARENT_NOTE}</Text>
-            <TextField
-              label="Dochód drugiego rodzica (PLN)"
-              value={incomeB}
-              onChangeText={setIncomeB}
-              keyboardType="numeric"
-            />
-            <Button
-              label={
-                compareMutation.isPending
-                  ? 'Porównujemy…'
-                  : 'Porównaj 3 warianty podziału'
-              }
-              variant="secondary"
-              onPress={() => compareMutation.mutate()}
-              disabled={compareMutation.isPending}
-            />
-            {compareMutation.isError ? (
-              <View style={styles.errorBlock}>
-                <Text style={styles.error}>
-                  {apiErrorMessage(
-                    compareMutation.error,
-                    'Porównanie niedostępne. Spróbuj ponownie — bez podstawiania kwoty.',
-                  )}
+          <View style={[styles.column, twoColumn && styles.columnRight]}>
+            <CalculatorSection
+              step="B"
+              title="Twoje świadczenie"
+              subtitle="Główny wynik szacunku z silnika."
+            >
+              <CalculatorResultHero
+                result={calcResult}
+                fullDose21={fullDose21}
+                empty={!calcResult && !calcMutation.isPending}
+                loading={calcMutation.isPending && !calcResult}
+              />
+            </CalculatorSection>
+          </View>
+
+          <View style={styles.fullWidth}>
+            <CalculatorSection
+              step="C"
+              title="Porównanie wariantów"
+              subtitle="100%/70%, 81,5% i podział między rodziców — gdy silnik odpowie."
+            >
+              <Card style={styles.formCard}>
+                <Text style={styles.body}>
+                  Porównanie trzech wariantów podziału urlopu rodzicielskiego. Nie
+                  oznaczamy automatycznie „najlepszego” wariantu.
                 </Text>
+                <TextField
+                  label="Dochód drugiego rodzica"
+                  value={incomeB}
+                  onChangeText={setIncomeB}
+                  keyboardType="numeric"
+                  hint="W PLN — używane tylko w porównaniu."
+                />
                 <Button
-                  label="Spróbuj ponownie"
+                  label={
+                    compareMutation.isPending
+                      ? 'Porównujemy…'
+                      : 'Porównaj 3 warianty podziału'
+                  }
                   variant="secondary"
                   onPress={() => compareMutation.mutate()}
                   disabled={compareMutation.isPending}
+                  fullWidth={isCompact}
                 />
-              </View>
-            ) : null}
-          </Card>
+                {compareMutation.isError ? (
+                  <CalculatorErrorPanel
+                    message={apiErrorMessage(
+                      compareMutation.error,
+                      'Porównanie niedostępne. Spróbuj ponownie — bez podstawiania kwoty.',
+                    )}
+                    onRetry={() => compareMutation.mutate()}
+                    pending={compareMutation.isPending}
+                  />
+                ) : null}
+                {compareMutation.isPending && !compareResult ? (
+                  <Text style={styles.meta}>Pobieramy warianty z silnika…</Text>
+                ) : null}
+              </Card>
 
-          {compareResult ? (
-            <CompareCard result={compareResult} fullDose21={fullDose21} />
-          ) : null}
-        </>
+              {compareResult ? (
+                <CalculatorComparePanel
+                  result={compareResult}
+                  fullDose21={fullDose21}
+                />
+              ) : null}
+            </CalculatorSection>
+
+            {calcResult ? (
+              <CalculatorSection
+                step="D"
+                title="Szczegóły obliczenia"
+                subtitle="Podstawa wymiaru, okresy i stawki — na żądanie."
+              >
+                <CalculatorDetailsPanel result={calcResult} />
+              </CalculatorSection>
+            ) : null}
+          </View>
+        </View>
       ) : (
-        <View style={[styles.layout, columns > 1 && styles.layoutRow]}>
-          <Card style={columns > 1 ? styles.side : undefined}>
-            <Text style={styles.section}>Demo lokalne — przykładowe warianty</Text>
-            <Button
-              label={calcMutation.isPending ? 'Liczymy…' : 'Policz warianty DEMO'}
-              onPress={() => calcMutation.mutate()}
-              disabled={calcMutation.isPending}
-            />
+        <View style={[styles.stack, twoColumn && styles.layoutRow]}>
+          <Card style={twoColumn ? styles.side : undefined}>
+            <CalculatorSection
+              step="A"
+              title="Demo lokalne"
+              subtitle="Przykładowe warianty bez FastAPI."
+            >
+              <Button
+                label={
+                  calcMutation.isPending ? 'Liczymy…' : 'Policz warianty DEMO'
+                }
+                onPress={() => calcMutation.mutate()}
+                disabled={calcMutation.isPending}
+                fullWidth
+              />
+            </CalculatorSection>
           </Card>
           {mockResult && 'scenarios' in mockResult ? (
-            <Card>
-              {(mockResult.scenarios ?? []).map((scenario) => (
-                <View key={scenario.id} style={styles.variant}>
-                  <Text style={styles.cardTitle}>{scenario.name}</Text>
-                  <Text style={styles.meta}>
-                    Kwota:{' '}
-                    {scenario.grossAmount == null
-                      ? 'niedostępna'
-                      : `${scenario.grossAmount} PLN`}
-                  </Text>
-                </View>
-              ))}
-              <Text style={styles.disclaimer}>{SIMULATION_DISCLAIMER}</Text>
+            <Card style={twoColumn ? styles.side : undefined}>
+              <CalculatorSection step="B" title="Wyniki DEMO">
+                {(mockResult.scenarios ?? []).map((scenario) => (
+                  <View key={scenario.id} style={styles.mockRow}>
+                    <Text style={styles.mockTitle}>{scenario.name}</Text>
+                    <Text style={styles.meta}>
+                      {scenario.grossAmount == null
+                        ? 'niedostępna'
+                        : `${scenario.grossAmount} PLN`}
+                    </Text>
+                  </View>
+                ))}
+              </CalculatorSection>
             </Card>
           ) : null}
         </View>
@@ -330,249 +365,80 @@ export function CalculatorScreen() {
   );
 }
 
-function CalculatedAmountCard({
-  result,
-  fullDose21,
-}: {
-  result: CalculatedAmount;
-  fullDose21: boolean;
-}) {
-  const zeroLikeAmount = isZeroAmount(result.total_amount_zl);
-  const zeroDays = result.total_days === 0;
-  const ambiguousZero = zeroLikeAmount && zeroDays;
-  const isLumpSum =
-    result.lump_sum_amount_zl != null &&
-    result.lump_sum_amount_zl !== '' &&
-    result.total_days == null;
-  const unverified = hasUnverifiedRateWarning(result.warnings);
-
-  return (
-    <Card>
-      <Badge
-        label={unverified ? 'Kwota wstępna — do weryfikacji' : 'Wynik z silnika'}
-        tone={unverified ? 'warning' : 'primary'}
-      />
-      <Text style={styles.cardTitle}>{result.benefit_name}</Text>
-      <Text style={styles.disclaimer}>{SIMULATION_DISCLAIMER}</Text>
-      <Text style={styles.meta}>{rateVariantLabel(fullDose21)}</Text>
-      {unverified ? <Text style={styles.warn}>{UNVERIFIED_AMOUNT_NOTE}</Text> : null}
-      {ambiguousZero ? (
-        <Text style={styles.warn}>
-          Silnik zwrócił 0 dni i 0 zł przy tych danych. To może oznaczać brak wymiaru dla
-          podanych parametrów (np. brak hospitalizacji), a nie ostateczną odmowę.
-        </Text>
-      ) : null}
-      <AmountRow
-        label="Łączna kwota"
-        value={
-          ambiguousZero
-            ? '0 zł (wymiar nieustalony)'
-            : formatNullableZl(result.total_amount_zl)
-        }
-        emphasize={!unverified && !ambiguousZero}
-      />
-      {unverified && result.total_amount_zl ? (
-        <Text style={styles.meta}>
-          Kwota wyświetlona, ale oznaczona jako nieweryfikowana z powodu ostrzeżeń silnika.
-        </Text>
-      ) : null}
-      <AmountRow label="Ryczałt" value={formatNullableZl(result.lump_sum_amount_zl)} />
-      <AmountRow
-        label="Liczba dni"
-        value={
-          result.total_days == null
-            ? isLumpSum
-              ? 'nie dotyczy (świadczenie kwotowe)'
-              : 'nieznana'
-            : String(result.total_days)
-        }
-      />
-      {result.basis ? (
-        <>
-          <Text style={styles.meta}>
-            Podstawa miesięczna: {result.basis.monthly_basis_zl} zł · dzienna:{' '}
-            {result.basis.daily_basis_zl} zł · potrącenie:{' '}
-            {result.basis.deduction_rate_percent}%
-          </Text>
-          {result.basis.minimum_basis_applied ? (
-            <Badge label="Zastosowano podstawę minimalną" tone="warning" />
-          ) : null}
-          {result.basis.warnings.map((w) => (
-            <Text key={w} style={styles.warn}>
-              {w}
-            </Text>
-          ))}
-        </>
-      ) : (
-        <Text style={styles.meta}>Brak podstawy wymiaru (np. świadczenie ryczałtowe).</Text>
-      )}
-      {result.rate_breakdown.length > 0 ? (
-        <>
-          <Text style={styles.sectionSmall}>Okresy i stawki z odpowiedzi silnika</Text>
-          {result.rate_breakdown.map((period, index) => (
-            <Text key={`${period.days}-${index}`} style={styles.meta}>
-              {period.days} dni · {period.rate_percentage}% · {period.amount_zl} zł
-            </Text>
-          ))}
-        </>
-      ) : null}
-      {result.warnings.map((w) => (
-        <Text key={w} style={styles.warn}>
-          {w}
-        </Text>
-      ))}
-    </Card>
-  );
-}
-
-function isZeroAmount(value: string | null | undefined): boolean {
-  if (value == null || value === '') return false;
-  const n = Number(String(value).replace(',', '.'));
-  return Number.isFinite(n) && n === 0;
-}
-
-function CompareCard({
-  result,
-  fullDose21,
-}: {
-  result: ParentalLeaveCompareResponse;
-  fullDose21: boolean;
-}) {
-  const unverified = hasUnverifiedRateWarning(result.warnings);
-  const nonTransferable = result.non_transferable_weeks_per_parent;
-
-  return (
-    <Card>
-      <Badge
-        label={unverified ? 'Porównanie wstępne — do weryfikacji' : 'Porównanie z silnika'}
-        tone={unverified ? 'warning' : 'primary'}
-      />
-      <Text style={styles.cardTitle}>Urlop rodzicielski — 3 warianty</Text>
-      <Text style={styles.meta}>{rateVariantLabel(fullDose21)}</Text>
-      <Text style={styles.meta}>
-        Pula: {result.total_pool_weeks} tyg. · stawka modelu w odpowiedzi:{' '}
-        {result.rate_percentage}%
-      </Text>
-      <View style={styles.reservedBlock}>
-        <Badge label={`${nonTransferable} tyg. zarezerwowane / rodzic`} tone="warning" />
-        <Text style={styles.callout}>{NON_TRANSFERABLE_PARENT_NOTE}</Text>
-        <Text style={styles.body}>
-          Silnik podaje {nonTransferable} nieprzenoszalnych tygodni na rodzica. Kwoty poniżej
-          pochodzą wyłącznie z API — frontend ich nie przelicza.
-        </Text>
-      </View>
-      <Text style={styles.disclaimer}>{SIMULATION_DISCLAIMER}</Text>
-      {unverified ? <Text style={styles.warn}>{UNVERIFIED_AMOUNT_NOTE}</Text> : null}
-      {result.variants.map((variant) => (
-        <View key={variant.label} style={styles.variant}>
-          <Text style={styles.cardTitle}>{variant.label}</Text>
-          <Text style={styles.body}>
-            Rodzic A: {variant.weeks_parent_a} tyg. ·{' '}
-            {formatNullableZl(variant.amount_parent_a_zl)}
-          </Text>
-          <Text style={styles.body}>
-            Rodzic B: {variant.weeks_parent_b} tyg. ·{' '}
-            {formatNullableZl(variant.amount_parent_b_zl)}
-          </Text>
-          <Text style={unverified ? styles.body : styles.bodyStrong}>
-            Suma rodzinna: {formatNullableZl(variant.total_household_amount_zl)}
-            {unverified ? ' (wstępna)' : ''}
-          </Text>
-        </View>
-      ))}
-      {result.warnings.map((w) => (
-        <Text key={w} style={styles.warn}>
-          {w}
-        </Text>
-      ))}
-    </Card>
-  );
-}
-
-function AmountRow({
-  label,
-  value,
-  emphasize,
-}: {
-  label: string;
-  value: string;
-  emphasize?: boolean;
-}) {
-  return (
-    <Text style={styles.body}>
-      {label}:{' '}
-      <Text style={emphasize ? styles.bodyStrong : styles.body}>{value}</Text>
-    </Text>
-  );
-}
-
-function formatNullableZl(value: string | null | undefined): string {
-  if (value == null || value === '') return 'niedostępna';
-  return `${value} zł`;
-}
-
-function parseOptionalNumber(raw: string): number | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  const n = Number(trimmed.replace(',', '.'));
-  return Number.isFinite(n) ? n : null;
-}
-
 function shortLabel(code: BenefitCode): string {
   const full = BENEFIT_CODE_LABEL[code];
-  return full.length > 28 ? `${full.slice(0, 27)}…` : full;
+  return full.length > 26 ? `${full.slice(0, 25)}…` : full;
 }
 
 const styles = StyleSheet.create({
-  headerMeta: { gap: spacing.xs },
-  meta: { ...typography.small, color: colors.textMuted, marginTop: 4 },
-  section: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
-  sectionSmall: {
+  stack: {
+    gap: spacing.xl,
+  },
+  stackDesktop: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+  },
+  column: {
+    gap: spacing.xl,
+    width: '100%',
+  },
+  columnLeft: {
+    flexGrow: 1,
+    flexBasis: 340,
+    maxWidth: 520,
+  },
+  columnRight: {
+    flexGrow: 1,
+    flexBasis: 340,
+    maxWidth: 640,
+  },
+  fullWidth: {
+    width: '100%',
+    gap: spacing.md,
+  },
+  formCard: {
+    gap: spacing.md,
+  },
+  formMeta: {
+    gap: spacing.xs,
+  },
+  fieldLabel: {
     ...typography.bodyStrong,
     color: colors.text,
-    marginTop: spacing.sm,
   },
   chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
-    marginBottom: spacing.md,
   },
-  layout: { gap: spacing.md },
-  layoutRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  side: { flex: 1 },
-  cardTitle: { ...typography.bodyStrong, color: colors.text, marginTop: spacing.xs },
-  body: { ...typography.body, color: colors.textSecondary, marginTop: 4 },
-  bodyStrong: { ...typography.bodyStrong, color: colors.text },
-  disclaimer: {
-    ...typography.small,
-    color: colors.warning,
-    marginTop: spacing.xs,
-    marginBottom: spacing.xs,
-  },
-  warn: { ...typography.small, color: colors.warning, marginTop: 4 },
-  error: { ...typography.small, color: colors.danger },
-  errorBlock: { gap: spacing.sm, marginTop: spacing.sm },
-  callout: {
-    ...typography.small,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  reservedBlock: {
-    marginTop: spacing.sm,
-    padding: spacing.sm,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.warning,
-    backgroundColor: colors.warningSoft,
+  toggleGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.xs,
   },
-  variant: {
+  body: {
+    ...typography.body,
+    color: colors.textSecondary,
+  },
+  meta: {
+    ...typography.small,
+    color: colors.textMuted,
+  },
+  layoutRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  side: {
+    flex: 1,
+  },
+  mockRow: {
     marginTop: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
     gap: 2,
+  },
+  mockTitle: {
+    ...typography.bodyStrong,
+    color: colors.text,
   },
 });
