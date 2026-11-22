@@ -3,7 +3,7 @@
 **Data:** 2026-11-22  
 **Gałąź:** `feature/ebobo-frontend-mvp`  
 **Bazowy tip:** `da341b0`  
-**Commit(y) Etapu 9:** *(po zatwierdzeniu — `git log --oneline -5`)*
+**Commit(y) Etapu 9:** eb82f17
 
 ---
 
