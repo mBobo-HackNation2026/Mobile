@@ -118,4 +118,6 @@ Katalog: `docs/ui-etap6/`
 
 ## 8. Numery commitów
 
-Uzupełnione po `git commit` (patrz historia gałęzi względem `d9fa59f`).
+- Dashboard Mój plan + wspólne UI: **`545970b`**
+- Sprawy / świadczenia / welcome / docs: **`ef0e35b`**
+- Tip gałęzi po Etapie 6: **`ef0e35b`** (bazowo od `d9fa59f`)
