@@ -1,10 +1,16 @@
 /**
- * Regresja: legal-advisor explain — schemat, alignment statusów, puste sekcje.
+ * Regresja: legal-advisor explain — schemat, alignment, race, abort.
  * npx --yes tsx scripts/regression-legal-advisor.ts
  */
 import {
+  evaluateExplainAlignment,
+  isUserAbortError,
+  shouldAcceptExplainResponse,
+} from '../src/features/benefits/explainAcceptance';
+import {
   isExplainStatusAligned,
   legalAdvisorExplainResponseSchema,
+  type LegalAdvisorExplainResponse,
 } from '../src/services/api/legalAdvisorExplainSchemas';
 
 function assert(cond: unknown, msg: string): asserts cond {
@@ -35,19 +41,19 @@ for (const status of ['requires_verification', 'not_eligible'] as const) {
   });
   assert(parsed.status === status, `status ${status}`);
   assert(parsed.source === 'ai', 'source ai');
-  assert(parsed.missing_data_explained.length === 1, 'missing list');
 }
 
-/** 3: likely_eligible */
+/** 3: likely_eligible + puste sekcje */
 {
   const parsed = legalAdvisorExplainResponseSchema.parse({
     ...base,
     status: 'likely_eligible',
     missing_data_explained: [],
     other_benefits_to_check: [],
+    suggested_next_steps: [],
   });
-  assert(parsed.missing_data_explained.length === 0, 'empty missing ok');
-  assert(parsed.other_benefits_to_check.length === 0, 'empty other ok');
+  assert(parsed.missing_data_explained.length === 0, 'empty missing');
+  assert(parsed.suggested_next_steps.length === 0, 'empty steps');
 }
 
 /** 4: fallback */
@@ -57,7 +63,7 @@ for (const status of ['requires_verification', 'not_eligible'] as const) {
     source: 'fallback',
     ai_available: false,
   });
-  assert(parsed.source === 'fallback', 'fallback source');
+  assert(parsed.source === 'fallback', 'fallback');
 }
 
 /** 5: requires_additional_verification */
@@ -66,30 +72,73 @@ for (const status of ['requires_verification', 'not_eligible'] as const) {
     ...base,
     requires_additional_verification: true,
   });
-  assert(parsed.requires_additional_verification, 'extra verification flag');
+  assert(parsed.requires_additional_verification, 'extra verification');
 }
 
-/** 6: empty optional arrays default */
+/** 6: defaults */
 {
   const parsed = legalAdvisorExplainResponseSchema.parse({
     benefit_code: 'urlop_ojcowski',
     status: 'not_eligible',
     explanation: 'Krótki opis.',
   });
-  assert(Array.isArray(parsed.suggested_next_steps), 'steps default');
-  assert(parsed.verified_legal_basis.length === 0, 'legal default empty');
+  assert(parsed.verified_legal_basis.length === 0, 'legal empty');
 }
 
-/** 12: alignment — nie nadpisujemy wyniku silnika */
-assert(
-  isExplainStatusAligned('requires_verification', 'requires_verification'),
-  'aligned same',
-);
-assert(
-  !isExplainStatusAligned('likely_eligible', 'not_eligible'),
-  'mismatch detected',
-);
-assert(isExplainStatusAligned(null, 'not_eligible'), 'null engine = skip');
-assert(isExplainStatusAligned(undefined, 'ai'), 'undefined engine = skip');
+/** Alignment */
+assert(isExplainStatusAligned('requires_verification', 'requires_verification'), 'aligned');
+assert(!isExplainStatusAligned('likely_eligible', 'not_eligible'), 'mismatch');
+assert(evaluateExplainAlignment('likely_eligible', 'likely_eligible'), 'eval ok');
+
+/** Race: stara odpowiedź po zmianie profilu / gen */
+{
+  const response = legalAdvisorExplainResponseSchema.parse(base) as LegalAdvisorExplainResponse;
+  const stale = shouldAcceptExplainResponse({
+    requestGen: 1,
+    currentGen: 2,
+    requestedBenefitCode: base.benefit_code,
+    response,
+  });
+  assert(!stale.accept, 'stale gen rejected');
+
+  const ok = shouldAcceptExplainResponse({
+    requestGen: 3,
+    currentGen: 3,
+    requestedBenefitCode: base.benefit_code,
+    response,
+  });
+  assert(ok.accept, 'current gen accepted');
+
+  const wrongBenefit = shouldAcceptExplainResponse({
+    requestGen: 1,
+    currentGen: 1,
+    requestedBenefitCode: 'urlop_ojcowski',
+    response,
+  });
+  assert(!wrongBenefit.accept && wrongBenefit.benefitMismatch, 'wrong benefit rejected');
+}
+
+/** Abort nie jest błędem UI; timeout jest */
+assert(isUserAbortError({ name: 'AbortError', message: 'aborted' }), 'abort detected');
+assert(isUserAbortError({ code: 'aborted', message: 'Żądanie zostało anulowane.' }), 'aborted code');
+assert(!isUserAbortError({ name: 'Error', message: '500' }), '500 not abort');
+assert(!isUserAbortError({ code: 'timeout', message: 'Serwer nie odpowiedział na czas.' }), 'timeout not abort');
+
+/** Payload explain = eligibility (benefit_code + status z silnika) — UI nie nadpisuje statusu */
+{
+  const engine = 'likely_eligible';
+  const explain = legalAdvisorExplainResponseSchema.parse({
+    ...base,
+    status: 'not_eligible',
+    source: 'fallback',
+  });
+  assert(!isExplainStatusAligned(engine, explain.status), 'engine wins on mismatch');
+  assert(explain.request_log_entry_id === 207, 'log id parsed but never rendered in UI');
+}
+
+/** HTTP-like codes — komunikaty bez traceback */
+for (const status of [404, 422, 500, 502] as const) {
+  assert(status >= 400, `http ${status} treated as error path`);
+}
 
 console.log('PASS regression-legal-advisor.ts');

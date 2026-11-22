@@ -6,6 +6,10 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import {
+  isUserAbortError,
+  shouldAcceptExplainResponse,
+} from '@/features/benefits/explainAcceptance';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import {
   BENEFIT_CODE_LABEL,
@@ -36,6 +40,9 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
   const [result, setResult] = useState<LegalAdvisorExplainResponse | null>(null);
   const [statusMismatch, setStatusMismatch] = useState(false);
   const requestGen = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
+  /** Snapshot profilu w momencie startu — do diagnostyki, bez logowania PII. */
+  const profileKey = profile.demoScenarioId ?? `${profile.stage}:${profile.employmentType}:${profile.insuranceStatus}`;
 
   const prominent =
     benefit.status === 'not_eligible' ||
@@ -44,12 +51,11 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
 
   useEffect(() => {
     requestGen.current += 1;
+    abortRef.current?.abort();
     setResult(null);
     setStatusMismatch(false);
     setShowLegal(false);
-  }, [benefit.id, profile]);
-
-  const abortRef = useRef<AbortController | null>(null);
+  }, [benefit.id, profileKey]);
 
   useEffect(() => {
     return () => {
@@ -60,6 +66,8 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
   const mutation = useMutation({
     mutationFn: async () => {
       abortRef.current?.abort();
+      setResult(null);
+      setStatusMismatch(false);
       const controller = new AbortController();
       abortRef.current = controller;
       const gen = ++requestGen.current;
@@ -69,10 +77,24 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
         payload,
         controller.signal,
       );
-      return { gen, data };
+      return { gen, data, requestedCode: benefit.id };
     },
-    onSuccess: ({ gen, data }) => {
-      if (gen !== requestGen.current) return;
+    onSuccess: ({ gen, data, requestedCode }) => {
+      const gate = shouldAcceptExplainResponse({
+        requestGen: gen,
+        currentGen: requestGen.current,
+        requestedBenefitCode: requestedCode,
+        response: data,
+      });
+      if (!gate.accept) {
+        if (gate.benefitMismatch) {
+          console.warn('[legal-advisor] benefit_code mismatch', {
+            requested: requestedCode,
+            received: data.benefit_code,
+          });
+        }
+        return;
+      }
       const aligned = isExplainStatusAligned(benefit.engineStatus, data.status);
       setStatusMismatch(!aligned);
       if (!aligned) {
@@ -80,12 +102,17 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
           benefit: benefit.id,
           engine: benefit.engineStatus,
           explain: data.status,
-          logId: data.request_log_entry_id,
         });
       }
       setResult(data);
     },
+    onError: (error) => {
+      if (isUserAbortError(error)) return;
+    },
   });
+
+  const showError =
+    mutation.isError && !mutation.isPending && !isUserAbortError(mutation.error);
 
   if (mode !== 'rest') {
     return (
@@ -115,7 +142,7 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
         To wyjaśnienie nie zmienia oceny uprawnień i nie jest decyzją ZUS.
       </Text>
 
-      {!result && !mutation.isPending ? (
+      {!result && !mutation.isPending && !showError ? (
         <Button
           label="Wyjaśnij mój wynik"
           variant={prominent ? 'primary' : 'secondary'}
@@ -135,7 +162,7 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
         </View>
       ) : null}
 
-      {mutation.isError ? (
+      {showError ? (
         <View style={styles.errorBox}>
           <Text style={styles.errorText}>
             {apiErrorMessage(
@@ -182,21 +209,25 @@ function ExplainCard({
     .map((p) => p.trim())
     .filter(Boolean);
 
+  if (statusMismatch) {
+    return (
+      <View style={styles.result}>
+        <View style={styles.warnBox}>
+          <Text style={styles.warnText}>
+            Wyjaśnienie nie jest spójne ze statusem oceny silnika. Nie traktujemy go jako
+            wiążącego — wynik uprawnień pozostaje bez zmian. Odśwież ocenę lub spróbuj
+            ponownie.
+          </Text>
+          <Button label="Ponów wyjaśnienie" variant="secondary" onPress={onRetry} />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.result}>
       {data.source === 'ai' ? (
         <Badge label="Wyjaśnienie przygotowane z pomocą AI" tone="demo" />
-      ) : null}
-
-      {statusMismatch ? (
-        <View style={styles.warnBox}>
-          <Text style={styles.warnText}>
-            Wykryto rozjazd statusu wyjaśnienia względem oceny silnika. Pokazujemy
-            tekst informacyjnie — nie zmieniamy wyniku uprawnień. Odśwież ocenę lub
-            spróbuj ponownie.
-          </Text>
-          <Button label="Ponów wyjaśnienie" variant="ghost" onPress={onRetry} />
-        </View>
       ) : null}
 
       {data.requires_additional_verification ? (
@@ -208,9 +239,9 @@ function ExplainCard({
         </View>
       ) : null}
 
-      <Text style={styles.section}>Wyjaśnienie Twojej sytuacji</Text>
-      {paragraphs.map((p) => (
-        <Text key={p.slice(0, 48)} style={styles.body}>
+      <Text style={styles.section}>Dlaczego otrzymałem taki wynik?</Text>
+      {paragraphs.map((p, index) => (
+        <Text key={`p-${index}`} style={styles.body}>
           {p}
         </Text>
       ))}
@@ -228,21 +259,23 @@ function ExplainCard({
 
       {data.suggested_next_steps.length > 0 ? (
         <>
-          <Text style={styles.section}>Co możesz zrobić teraz?</Text>
+          <Text style={styles.section}>Co mogę zrobić teraz?</Text>
           {data.suggested_next_steps.map((step, index) => (
             <Text key={step} style={styles.bullet}>
               {index + 1}. {step}
             </Text>
           ))}
-          <Link href={'/onboarding' as Href}>
-            <Text style={styles.link}>Uzupełnij dane w ankiecie →</Text>
-          </Link>
+          {data.missing_data_explained.length > 0 ? (
+            <Link href={'/onboarding' as Href}>
+              <Text style={styles.link}>Uzupełnij dane w ankiecie →</Text>
+            </Link>
+          ) : null}
         </>
       ) : null}
 
       {data.other_benefits_to_check.length > 0 ? (
         <>
-          <Text style={styles.section}>Inne świadczenia, które warto sprawdzić</Text>
+          <Text style={styles.section}>Jakie inne świadczenia warto sprawdzić?</Text>
           <Text style={styles.meta}>
             To nie oznacza, że Ci przysługują — każde trzeba ocenić osobno.
           </Text>

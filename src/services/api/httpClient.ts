@@ -80,16 +80,20 @@ export async function apiRequest<T>(
       signal: controller.signal,
     });
   } catch (error) {
-    const aborted =
+    const isAbort =
       (error instanceof Error && error.name === 'AbortError') ||
       controller.signal.aborted;
+    /** Timeout timera vs abort użytkownika / unmount — ten sam AbortError w fetch. */
+    const timedOut = isAbort && !externalSignal?.aborted;
     throw new ApiClientError(
-      aborted
+      timedOut
         ? 'Serwer nie odpowiedział na czas. Sprawdź połączenie lub tunel i spróbuj ponownie.'
-        : 'Brak połączenia z silnikiem świadczeń. Lokalny plan DEMO działa — ocena i kalkulator wymagają API.',
+        : isAbort
+          ? 'Żądanie zostało anulowane.'
+          : 'Brak połączenia z silnikiem świadczeń. Lokalny plan DEMO działa — ocena i kalkulator wymagają API.',
       0,
       null,
-      aborted ? 'timeout' : 'network_error',
+      timedOut ? 'timeout' : isAbort ? 'aborted' : 'network_error',
     );
   } finally {
     clearTimeout(timeoutId);

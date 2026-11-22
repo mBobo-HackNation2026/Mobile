@@ -12,6 +12,9 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
 }
 
 function humanizeApiClientError(error: ApiClientError): string {
+  if (error.code === 'aborted') {
+    return 'Żądanie zostało anulowane.';
+  }
   if (error.code === 'timeout') {
     return 'Serwer nie odpowiedział na czas. Sprawdź połączenie lub tunel i spróbuj ponownie.';
   }
@@ -23,13 +26,13 @@ function humanizeApiClientError(error: ApiClientError): string {
   }
   if (error.status === 422) {
     return error.message?.trim()
-      ? `Dane do obliczenia są niekompletne lub niepoprawne: ${stripTechnicalNoise(error.message)}`
-      : 'Dane do obliczenia są niekompletne. Uzupełnij ankietę lub pola w kalkulatorze.';
+      ? `Dane są niekompletne lub niepoprawne: ${stripTechnicalNoise(error.message)}`
+      : 'Dane są niekompletne. Uzupełnij ankietę i spróbuj ponownie.';
   }
   if (error.status === 404) {
     return error.message?.trim()
       ? stripTechnicalNoise(error.message)
-      : 'To świadczenie nie ma jeszcze kalkulacji w silniku.';
+      : 'Nie znaleziono tego świadczenia w silniku. Wybierz inne lub wróć do listy.';
   }
   return stripTechnicalNoise(error.message);
 }
