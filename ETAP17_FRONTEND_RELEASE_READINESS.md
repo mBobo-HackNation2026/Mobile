@@ -28,7 +28,7 @@ Po spełnieniu powyższego przez ops/BE możliwa jest pełna deklaracja „aplik
 |---|---|
 | Branch | `feature/ebobo-frontend-mvp` |
 | HEAD przed Etap 17 | `dd2a6b0` |
-| HEAD po Etap 17 | *(po commicie — patrz sekcja 16)* |
+| HEAD po Etap 17 | `e004275` |
 | Sync origin | push Etap 17 w tej sesji |
 
 Sekrety: `.env` gitignored; skan `dist/` — **brak** `OPENROUTER_API_KEY` / `sk-or-v1`.
@@ -188,6 +188,6 @@ Instrukcja: `README.md` + `SUBMISSION.md`.
 
 | Commit | Opis |
 |---|---|
-| *(pending)* | Etap 17 — formalities live, missing_fields, smoke, report |
+| `e004275` | feat(etap17): freeze FE readiness — formalities, missing_fields, live smoke |
 
-**Punkt odniesienia do polishu:** HEAD po pushu Etap 17.
+**Punkt odniesienia do polishu:** `e004275` (po sync z origin).
