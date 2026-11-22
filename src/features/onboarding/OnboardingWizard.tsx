@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -25,6 +26,7 @@ import {
   type TriState,
 } from '@/features/onboarding/schema';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
+import { prefetchCatalogEligibility } from '@/hooks/useCatalogEligibility';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, spacing, typography } from '@/theme';
 import {
@@ -65,6 +67,7 @@ export function OnboardingWizard() {
   const params = useLocalSearchParams<{ stage?: string }>();
   const profile = useUserJourneyStore((s) => s.profile);
   const completeOnboarding = useUserJourneyStore((s) => s.completeOnboarding);
+  const queryClient = useQueryClient();
   const { isCompact } = useAdaptiveLayout();
   const [step, setStep] = useState(0);
 
@@ -165,7 +168,9 @@ export function OnboardingWizard() {
       isDemo: false,
       demoScenarioId: null,
     });
-    router.push('/benefits');
+    const nextProfile = useUserJourneyStore.getState().profile;
+    void prefetchCatalogEligibility(queryClient, nextProfile);
+    router.push('/home');
   };
 
   const goBack = () => {

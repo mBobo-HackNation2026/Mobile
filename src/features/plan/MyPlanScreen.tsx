@@ -1,6 +1,6 @@
 import { Link, router, type Href } from 'expo-router';
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { ApiHealthBanner } from '@/components/ui/ApiHealthBanner';
 import { Badge } from '@/components/ui/Badge';
@@ -12,24 +12,49 @@ import { LegalDisclaimer } from '@/components/ui/LegalDisclaimer';
 import { QuickActionRow } from '@/components/ui/QuickActionRow';
 import { Screen } from '@/components/ui/Screen';
 import { buildParentPlan } from '@/features/plan/buildParentPlan';
-import { PLAN_CATEGORY_LABEL, PLAN_KIND_LABEL } from '@/features/plan/planUi';
+import {
+  buildSituationSummary,
+  countEligibilityBuckets,
+  ELIGIBILITY_COUNT_LABEL,
+  pickDashboardFocus,
+} from '@/features/plan/eligibilityDashboard';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
+import { useCatalogEligibility } from '@/hooks/useCatalogEligibility';
+import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import { formatShortDatePl } from '@/lib/format';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, radii, spacing, typography } from '@/theme';
 
 /**
- * Mój Plan — „Co powinienem zrobić teraz?”
- * Etap 9: krótsza hierarchia, bez pełnej checklisty (ta jest w Moich sprawach).
+ * Mój Plan — hierarchia Etapu 12:
+ * sytuacja → możliwości (eligibility) → co teraz → formalności API → DEMO lokalne.
  */
 export function MyPlanScreen() {
   const profile = useUserJourneyStore((s) => s.profile);
   const overrides = useUserJourneyStore((s) => s.checklistOverrides);
   const { columns } = useAdaptiveLayout();
+  const {
+    evaluation,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useCatalogEligibility();
 
-  const plan = useMemo(
+  const localPlan = useMemo(
     () => buildParentPlan(profile, overrides),
     [profile, overrides],
+  );
+
+  const situation = useMemo(() => buildSituationSummary(profile), [profile]);
+  const counts = useMemo(
+    () => countEligibilityBuckets(evaluation?.benefits ?? []),
+    [evaluation],
+  );
+  const focus = useMemo(
+    () => pickDashboardFocus(evaluation, { hasError: isError }),
+    [evaluation, isError],
   );
 
   if (!profile.onboardingCompleted) {
@@ -37,7 +62,7 @@ export function MyPlanScreen() {
       <Screen title="Mój plan">
         <EmptyState
           title="Najpierw poznajmy Twoją sytuację"
-          description="Krótka ankieta wystarczy, żeby ułożyć pierwsze konkretne kroki."
+          description="Krótka ankieta wystarczy, żeby sprawdzić świadczenia i ułożyć kolejne kroki."
           actionLabel="Zacznij ankietę"
           onAction={() => router.push('/welcome')}
         />
@@ -45,80 +70,121 @@ export function MyPlanScreen() {
     );
   }
 
-  const openTasks = plan.tasks.filter((t) => t.status !== 'done');
-  const focusTask =
-    openTasks.find((t) => t.bucket === 'now') ??
-    openTasks.find((t) => t.priority === 'required') ??
-    openTasks[0] ??
-    null;
-
-  const upcoming = plan.tasks
-    .filter((t) => t.status !== 'done' && (t.dueDate || t.windowLabel))
-    .slice(0, 3);
-
-  const progress =
-    plan.tasks.length === 0 ? 0 : plan.doneCount / plan.tasks.length;
   const twoCol = columns > 1;
+  const apiFormalities = (evaluation?.checklist ?? [])
+    .filter((item) => item.status !== 'done')
+    .slice(0, 3);
+  const apiDeadline = evaluation?.upcomingDeadline ?? null;
 
   return (
-    <Screen title="Mój plan" subtitle="Co zrobić teraz — w skrócie.">
+    <Screen title="Mój plan" subtitle="Ocena uprawnień i kolejny krok.">
       <ApiHealthBanner />
-      <DemoBanner message="To lokalny plan demonstracyjny. Ocena świadczeń i kwoty są w Świadczeniach oraz Kalkulatorze." />
+      {evaluation && !evaluation.isDemo ? (
+        <DemoBanner message="Podsumowanie uprawnień pochodzi z silnika FastAPI — to nie decyzja ZUS. Wskazówki lokalne poniżej są oznaczone jako DEMO." />
+      ) : (
+        <DemoBanner message="Trwa łączenie z oceną uprawnień. Lokalne wskazówki DEMO nie zastępują wyniku silnika." />
+      )}
 
       <View style={[styles.stack, twoCol && styles.stackDesktop]}>
         <View style={[styles.col, twoCol && styles.colMain]}>
+          {/* A. Sytuacja */}
           <View style={styles.block}>
             <Text style={styles.blockTitle}>Twoja sytuacja</Text>
             <Card style={styles.situationCard}>
-              <Text style={styles.situationStage}>{plan.timeline.stageLabel}</Text>
-              {plan.timeline.progressLabel ? (
-                <Text style={styles.situationHint}>{plan.timeline.progressLabel}</Text>
+              <Text style={styles.situationStage}>{situation.title}</Text>
+              {situation.detail ? (
+                <Text style={styles.situationHint}>{situation.detail}</Text>
               ) : null}
-              <View style={styles.progressRow}>
-                <View style={styles.progressTrack}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${Math.round(progress * 100)}%` },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.progressMeta}>
-                  {plan.doneCount}/{plan.tasks.length}
-                </Text>
-              </View>
             </Card>
           </View>
 
+          {/* B. Możliwości */}
+          <View style={styles.block}>
+            <Text style={styles.blockTitle}>Twoje możliwości</Text>
+            {isLoading && !evaluation ? (
+              <Card style={styles.loadingCard}>
+                <ActivityIndicator color={colors.primary} />
+                <Text style={styles.emptyCopy}>Sprawdzamy 9 świadczeń…</Text>
+              </Card>
+            ) : isError && !evaluation ? (
+              <Card>
+                <Text style={styles.emptyCopy}>
+                  {apiErrorMessage(
+                    error,
+                    'Nie udało się połączyć z silnikiem. To nie oznacza braku uprawnienia.',
+                  )}
+                </Text>
+                <Button label="Spróbuj ponownie" onPress={() => refetch()} />
+              </Card>
+            ) : evaluation ? (
+              <Card style={styles.countsCard}>
+                <Text style={styles.meta}>
+                  Ocena katalogu · {evaluation.benefits.length} świadczeń
+                  {isFetching ? ' · odświeżanie…' : ''}
+                </Text>
+                {(
+                  [
+                    'likely',
+                    'needs_info',
+                    'not_eligible',
+                    'unchecked',
+                  ] as const
+                ).map((key) =>
+                  counts[key] > 0 ? (
+                    <View key={key} style={styles.countRow}>
+                      <Text style={styles.countLabel}>
+                        {ELIGIBILITY_COUNT_LABEL[key]}
+                      </Text>
+                      <Badge label={String(counts[key])} tone="neutral" />
+                    </View>
+                  ) : null,
+                )}
+                <Button
+                  label="Zobacz wszystkie świadczenia"
+                  variant="secondary"
+                  onPress={() => router.push('/benefits')}
+                />
+              </Card>
+            ) : null}
+          </View>
+
+          {/* C. Co teraz */}
           <View style={styles.block}>
             <Text style={styles.blockTitle}>Co teraz?</Text>
-            {focusTask ? (
+            {focus ? (
               <Card style={styles.focusCard}>
-                <View style={styles.focusBadges}>
-                  <Badge label={PLAN_CATEGORY_LABEL[focusTask.category]} tone="primary" />
-                  <Badge label={PLAN_KIND_LABEL[focusTask.kind]} tone="neutral" />
-                </View>
-                <Text style={styles.focusTitle}>{focusTask.title}</Text>
-                <Text style={styles.focusSummary} numberOfLines={3}>
-                  {focusTask.summary}
+                <Badge
+                  label={
+                    focus.source === 'missing_data'
+                      ? 'Uzupełnij dane'
+                      : focus.source === 'formalities'
+                        ? 'Formalność'
+                        : focus.source === 'retry'
+                          ? 'Ponów'
+                          : 'Uprawnienia'
+                  }
+                  tone="primary"
+                />
+                <Text style={styles.focusTitle}>{focus.title}</Text>
+                <Text style={styles.focusSummary} numberOfLines={4}>
+                  {focus.summary}
                 </Text>
-                {focusTask.dueDate || focusTask.windowLabel ? (
-                  <Text style={styles.focusDue}>
-                    {focusTask.dueDate
-                      ? `Termin: ${formatShortDatePl(focusTask.dueDate)}`
-                      : focusTask.windowLabel}
-                  </Text>
-                ) : null}
                 <Button
-                  label={focusTask.ctaLabel}
-                  onPress={() => router.push(focusTask.ctaHref as Href)}
+                  label={focus.ctaLabel}
+                  onPress={() => {
+                    if (focus.source === 'retry' && focus.ctaHref === '/home') {
+                      void refetch();
+                      return;
+                    }
+                    router.push(focus.ctaHref as Href);
+                  }}
                   fullWidth
                 />
               </Card>
             ) : (
               <Card>
                 <Text style={styles.emptyCopy}>
-                  Brak otwartych zadań. Sprawdź świadczenia albo popraw ankietę.
+                  Brak jednoznacznego kolejnego kroku. Sprawdź listę świadczeń.
                 </Text>
                 <Button
                   label="Moje świadczenia"
@@ -130,52 +196,89 @@ export function MyPlanScreen() {
         </View>
 
         <View style={[styles.col, twoCol && styles.colSide]}>
+          {/* D. Formalności z API */}
           <View style={styles.block}>
-            <Text style={styles.blockTitle}>Najbliższe terminy</Text>
+            <Text style={styles.blockTitle}>Najbliższe formalności</Text>
             <Card style={styles.deadlinesCard}>
-              {plan.nextDeadline ? (
+              <Text style={styles.meta}>
+                Źródło: plany z oceny uprawnień / formalities (gdy silnik je zwróci).
+              </Text>
+              {apiDeadline ? (
                 <View style={styles.deadlineHighlight}>
                   <Badge label="Najbliższy" tone="warning" />
-                  <Text style={styles.deadlineTitle}>{plan.nextDeadline.title}</Text>
+                  <Text style={styles.deadlineTitle}>{apiDeadline.title}</Text>
                   <Text style={styles.deadlineDate}>
-                    {formatShortDatePl(plan.nextDeadline.date)}
+                    {formatShortDatePl(apiDeadline.date)}
                   </Text>
                 </View>
+              ) : null}
+              {apiFormalities.length > 0 ? (
+                apiFormalities.map((item) => (
+                  <View key={item.id} style={styles.deadlineRow}>
+                    <Text style={styles.deadlineRowTitle} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <Text style={styles.deadlineRowMeta}>
+                      {item.dueDate
+                        ? formatShortDatePl(item.dueDate)
+                        : item.office ?? 'Do potwierdzenia'}
+                    </Text>
+                  </View>
+                ))
               ) : (
                 <Text style={styles.emptyCopy}>
-                  Brak sztywnej daty w otwartych zadaniach.
+                  Brak gotowej checklisty z silnika dla tej oceny — nie wymyślamy
+                  obowiązków. Sprawdź sprawy lub uzupełnij dane.
                 </Text>
               )}
-              {upcoming.map((task) => (
-                <View key={task.id} style={styles.deadlineRow}>
-                  <Text style={styles.deadlineRowTitle} numberOfLines={2}>
-                    {task.title}
-                  </Text>
-                  <Text style={styles.deadlineRowMeta}>
-                    {task.dueDate
-                      ? formatShortDatePl(task.dueDate)
-                      : task.windowLabel}
-                  </Text>
-                </View>
-              ))}
               <Button
-                label="Pełna lista spraw"
+                label="Moje sprawy"
                 variant="secondary"
                 onPress={() => router.push('/sprawy')}
               />
             </Card>
           </View>
 
+          {/* E. Szybkie działania */}
           <View style={styles.block}>
-            <Text style={styles.blockTitle}>Co jeszcze?</Text>
+            <Text style={styles.blockTitle}>Szybkie działania</Text>
             <QuickActionRow
               actions={[
+                { label: 'Świadczenia', href: '/benefits', hint: '9 ocen' },
+                {
+                  label: 'Uzupełnij dane',
+                  href: '/complete-data',
+                  hint: 'Braki',
+                },
                 { label: 'Sprawy', href: '/sprawy', hint: 'Checklista' },
-                { label: 'Świadczenia', href: '/benefits', hint: 'Uprawnienia' },
                 { label: 'Kalkulator', href: '/calculator', hint: 'Kwoty' },
-                { label: 'Kalendarz', href: '/calendar', hint: 'Terminy' },
               ]}
             />
+          </View>
+
+          {/* Lokalne DEMO — wyraźnie oddzielone */}
+          <View style={styles.block}>
+            <Text style={styles.blockTitle}>Wskazówki lokalne (DEMO)</Text>
+            <Card>
+              <Text style={styles.emptyCopy}>
+                To pomocnicze zadania z lokalnego planu demonstracyjnego — nie są
+                zatwierdzone przez silnik uprawnień.
+              </Text>
+              {localPlan.nextDeadline ? (
+                <Text style={styles.meta}>
+                  DEMO termin: {localPlan.nextDeadline.title} (
+                  {formatShortDatePl(localPlan.nextDeadline.date)})
+                </Text>
+              ) : (
+                <Text style={styles.meta}>
+                  Brak sztywnej daty w lokalnych zadaniach DEMO.
+                </Text>
+              )}
+              <Text style={styles.meta}>
+                Otwarte lokalnie: {localPlan.openCount} · zrobione:{' '}
+                {localPlan.doneCount}
+              </Text>
+            </Card>
           </View>
         </View>
       </View>
@@ -219,35 +322,26 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.primaryHover,
   },
-  progressRow: {
+  countsCard: { gap: spacing.sm },
+  countRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.sm,
-    marginTop: spacing.sm,
   },
-  progressTrack: {
-    flex: 1,
-    height: 8,
-    borderRadius: radii.full,
-    backgroundColor: colors.surface,
-    overflow: 'hidden',
-  },
-  progressFill: { height: '100%', backgroundColor: colors.primary },
-  progressMeta: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    minWidth: 40,
-    textAlign: 'right',
+  countLabel: { ...typography.body, color: colors.textSecondary, flex: 1 },
+  loadingCard: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
   },
   focusCard: {
     gap: spacing.sm,
     borderColor: colors.primaryMuted,
     borderWidth: 1.5,
   },
-  focusBadges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   focusTitle: { ...typography.h2, color: colors.text },
   focusSummary: { ...typography.body, color: colors.textSecondary },
-  focusDue: { ...typography.small, color: colors.warning },
   deadlinesCard: { gap: spacing.sm },
   deadlineHighlight: {
     gap: spacing.xs,
@@ -272,6 +366,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.sm,
   },
+  meta: { ...typography.small, color: colors.textMuted },
   menuLink: {
     ...typography.bodyStrong,
     color: colors.textMuted,

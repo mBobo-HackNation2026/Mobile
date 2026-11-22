@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
 import { Link, router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -20,29 +19,25 @@ import {
   shouldOpenAssessmentReview,
 } from '@/features/benefits/benefitUi';
 import { resolveBenefitInstitution } from '@/features/benefits/resolveBenefitInstitution';
+import { useCatalogEligibility } from '@/hooks/useCatalogEligibility';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import { formatDatePl } from '@/lib/format';
-import { eligibilityService, getApiMode } from '@/services/api';
-import { useUserJourneyStore } from '@/store/useUserJourneyStore';
+import { getApiMode } from '@/services/api';
 import { colors, spacing, typography } from '@/theme';
 import { BENEFIT_STATUS_LABEL } from '@/types/benefits';
 import { INSTITUTIONS } from '@/types/institutions';
 
 export function BenefitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const profile = useUserJourneyStore((s) => s.profile);
   const mode = getApiMode();
   const [showConditions, setShowConditions] = useState(false);
   const [showProcedure, setShowProcedure] = useState(false);
   const [showSources, setShowSources] = useState(false);
 
-  const query = useQuery({
-    queryKey: ['eligibility', profile],
-    queryFn: () => eligibilityService.evaluate(profile),
-    enabled: profile.onboardingCompleted,
-  });
+  const { profile, evaluation, isLoading, isError, error, refetch } =
+    useCatalogEligibility();
 
-  const benefit = query.data?.benefits.find((item) => item.id === id);
+  const benefit = evaluation?.benefits.find((item) => item.id === id);
 
   if (!profile.onboardingCompleted) {
     return (
@@ -52,7 +47,7 @@ export function BenefitDetailScreen() {
     );
   }
 
-  if (query.isLoading) {
+  if (isLoading) {
     return (
       <Screen>
         <Card>
@@ -62,14 +57,14 @@ export function BenefitDetailScreen() {
     );
   }
 
-  if (query.isError) {
+  if (isError) {
     return (
       <Screen>
         <EmptyState
           title="Nie udało się wczytać szczegółów"
-          description={apiErrorMessage(query.error, 'Spróbuj ponownie.')}
+          description={apiErrorMessage(error, 'Spróbuj ponownie.')}
           actionLabel="Spróbuj ponownie"
-          onAction={() => query.refetch()}
+          onAction={() => refetch()}
         />
       </Screen>
     );

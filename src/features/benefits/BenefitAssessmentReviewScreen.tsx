@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -17,11 +17,14 @@ import {
   CONDITION_TONE,
 } from '@/features/benefits/benefitUi';
 import { ProfileAnswersReview } from '@/features/benefits/ProfileAnswersReview';
+import {
+  CATALOG_ELIGIBILITY_QUERY_KEY,
+  useCatalogEligibility,
+} from '@/hooks/useCatalogEligibility';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import {
   BENEFIT_CODE_LABEL,
   checkBenefitEligibility,
-  eligibilityService,
   getApiMode,
   isKnownBenefitCode,
   mapEligibilityCheckToBenefit,
@@ -43,7 +46,6 @@ import type { ParentProfile } from '@/types/journey';
  */
 export function BenefitAssessmentReviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const profile = useUserJourneyStore((s) => s.profile);
   const setProfile = useUserJourneyStore((s) => s.setProfile);
   const mode = getApiMode();
   const queryClient = useQueryClient();
@@ -52,13 +54,16 @@ export function BenefitAssessmentReviewScreen() {
     null,
   );
 
-  const query = useQuery({
-    queryKey: ['eligibility', profile],
-    queryFn: () => eligibilityService.evaluate(profile),
-    enabled: profile.onboardingCompleted,
-  });
+  const {
+    profile,
+    evaluation,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useCatalogEligibility();
 
-  const fromList = query.data?.benefits.find((item) => item.id === id);
+  const fromList = evaluation?.benefits.find((item) => item.id === id);
   const benefit = overrideBenefit?.id === id ? overrideBenefit : fromList;
 
   const recheck = useMutation({
@@ -71,7 +76,9 @@ export function BenefitAssessmentReviewScreen() {
     onSuccess: async (mapped) => {
       setOverrideBenefit(mapped);
       setExplain(null);
-      await queryClient.invalidateQueries({ queryKey: ['eligibility'] });
+      await queryClient.invalidateQueries({
+        queryKey: [CATALOG_ELIGIBILITY_QUERY_KEY],
+      });
     },
   });
 
@@ -88,7 +95,7 @@ export function BenefitAssessmentReviewScreen() {
     );
   }
 
-  if (query.isLoading && !benefit) {
+  if (isLoading && !benefit) {
     return (
       <Screen title="Szczegóły oceny">
         <Card>
@@ -98,14 +105,14 @@ export function BenefitAssessmentReviewScreen() {
     );
   }
 
-  if (query.isError && !benefit) {
+  if (isError && !benefit) {
     return (
       <Screen title="Szczegóły oceny">
         <EmptyState
           title="Nie udało się wczytać oceny"
-          description={apiErrorMessage(query.error, 'Spróbuj ponownie.')}
+          description={apiErrorMessage(error, 'Spróbuj ponownie.')}
           actionLabel="Spróbuj ponownie"
-          onAction={() => query.refetch()}
+          onAction={() => refetch()}
         />
       </Screen>
     );

@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
 import { Link, router, type Href } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -19,9 +18,9 @@ import {
   shouldOpenAssessmentReview,
 } from '@/features/benefits/benefitUi';
 import { resolveBenefitInstitution } from '@/features/benefits/resolveBenefitInstitution';
+import { useCatalogEligibility } from '@/hooks/useCatalogEligibility';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
-import { eligibilityService, getApiMode } from '@/services/api';
-import { useUserJourneyStore } from '@/store/useUserJourneyStore';
+import { getApiMode } from '@/services/api';
 import { colors, spacing, typography } from '@/theme';
 import {
   BENEFIT_GROUP_ORDER,
@@ -32,14 +31,9 @@ import {
 } from '@/types/benefits';
 
 export function BenefitsHubScreen() {
-  const profile = useUserJourneyStore((s) => s.profile);
   const mode = getApiMode();
-
-  const query = useQuery({
-    queryKey: ['eligibility', profile],
-    queryFn: () => eligibilityService.evaluate(profile),
-    enabled: profile.onboardingCompleted,
-  });
+  const { profile, evaluation, isLoading, isError, error, refetch } =
+    useCatalogEligibility();
 
   if (!profile.onboardingCompleted) {
     return (
@@ -54,7 +48,7 @@ export function BenefitsHubScreen() {
     );
   }
 
-  if (query.isLoading) {
+  if (isLoading) {
     return (
       <Screen title="Moje świadczenia">
         <ApiHealthBanner />
@@ -65,27 +59,27 @@ export function BenefitsHubScreen() {
     );
   }
 
-  if (query.isError || !query.data) {
+  if (isError || !evaluation) {
     return (
       <Screen title="Moje świadczenia">
         <ApiHealthBanner />
         <EmptyState
           title="Nie udało się ocenić świadczeń"
           description={apiErrorMessage(
-            query.error,
+            error,
             mode === 'rest'
-              ? 'Silnik nie odpowiedział. Lokalny plan DEMO w „Mój plan” nadal działa — bez przykładowych kwot zamiast wyniku.'
+              ? 'Silnik nie odpowiedział. To nie oznacza braku uprawnienia — spróbuj ponownie.'
               : 'Spróbuj ponownie — tryb demonstracyjny powinien działać offline.',
           )}
           actionLabel="Spróbuj ponownie"
-          onAction={() => query.refetch()}
+          onAction={() => refetch()}
         />
-        <Button label="Otwórz Mój plan DEMO" onPress={() => router.push('/home')} />
+        <Button label="Otwórz Mój plan" onPress={() => router.push('/home')} />
       </Screen>
     );
   }
 
-  const grouped = groupBenefits(query.data.benefits);
+  const grouped = groupBenefits(evaluation.benefits);
 
   return (
     <Screen
@@ -101,16 +95,16 @@ export function BenefitsHubScreen() {
         }
       />
 
-      {query.data.missingInputs.length > 0 ? (
+      {evaluation.missingInputs.length > 0 ? (
         <Card style={styles.missingCard}>
           <Badge label="Uzupełnij dane" tone="primary" />
           <Text style={styles.cardTitle}>Potrzebujemy jeszcze informacji</Text>
           <Text style={styles.body} numberOfLines={2}>
-            Brakuje: {query.data.missingInputs.join(', ')}.
+            Brakuje: {evaluation.missingInputs.join(', ')}.
           </Text>
           <Button
-            label="Uzupełnij ankietę"
-            onPress={() => router.push('/onboarding')}
+            label="Uzupełnij dane"
+            onPress={() => router.push('/complete-data')}
           />
         </Card>
       ) : null}
@@ -143,8 +137,8 @@ export function BenefitsHubScreen() {
         ]}
       />
 
-      {query.data.ruleSetVersion ? (
-        <Text style={styles.meta}>Wersja reguł: {query.data.ruleSetVersion}</Text>
+      {evaluation.ruleSetVersion ? (
+        <Text style={styles.meta}>Wersja reguł: {evaluation.ruleSetVersion}</Text>
       ) : null}
       <LegalDisclaimer />
     </Screen>
