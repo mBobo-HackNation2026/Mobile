@@ -55,6 +55,9 @@ export const API_PATHS = {
   /** Silnik uprawnień FastAPI — `POST /eligibility/check/{benefit_code}`. */
   eligibilityCheck: (benefitCode: string) =>
     `/api/v1/eligibility/check/${encodeURIComponent(benefitCode)}`,
+  /** Wyjaśnienie wyniku — ten sam payload co eligibility/check. */
+  legalAdvisorExplain: (benefitCode: string) =>
+    `/api/v1/legal-advisor/explain/${encodeURIComponent(benefitCode)}`,
   /** Kalkulacja kwoty — `POST /benefits/calculate/{benefit_code}`. */
   benefitsCalculate: (benefitCode: string) =>
     `/api/v1/benefits/calculate/${encodeURIComponent(benefitCode)}`,

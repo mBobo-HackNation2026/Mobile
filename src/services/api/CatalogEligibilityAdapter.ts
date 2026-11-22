@@ -112,6 +112,7 @@ function uncheckedBenefit(code: BenefitCode, reason: unknown): BenefitAssessment
     id: code,
     title: BENEFIT_CODE_LABEL[code],
     status: 'needs_review',
+    engineStatus: null,
     headline: 'Nie sprawdzono — brak wyniku z silnika dla tego świadczenia.',
     summary:
       'To nie oznacza braku prawa. Spróbuj ponowić ocenę albo sprawdź świadczenie indywidualnie.',

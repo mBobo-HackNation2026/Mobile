@@ -114,6 +114,7 @@ export const benefitAssessmentSchema = z.object({
     'insufficient_data',
     'needs_review',
   ]),
+  engineStatus: z.string().nullable().optional(),
   headline: z.string(),
   summary: z.string(),
   rationale: z.string(),

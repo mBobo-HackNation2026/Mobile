@@ -59,6 +59,8 @@ config.server = {
           {
             method: req.method,
             headers,
+            /** OpenRouter / explain może trwać ~15s — nie ucinaj wcześniej. */
+            timeout: 30_000,
           },
           (proxyRes) => {
             const outHeaders = { ...proxyRes.headers };
@@ -70,7 +72,20 @@ config.server = {
           },
         );
 
+        proxyReq.on('timeout', () => {
+          proxyReq.destroy();
+          if (!res.headersSent) {
+            res.writeHead(504, { 'Content-Type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                detail: 'Proxy: przekroczono czas oczekiwania na FastAPI.',
+              }),
+            );
+          }
+        });
+
         proxyReq.on('error', (error) => {
+          if (res.headersSent) return;
           res.writeHead(502, { 'Content-Type': 'application/json' });
           res.end(
             JSON.stringify({

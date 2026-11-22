@@ -37,6 +37,7 @@ export function mapEligibilityCheckToBenefit(
     id: benefitId,
     title,
     status: cautious && status === 'likely_eligible' ? 'needs_review' : status,
+    engineStatus: result.status,
     headline: cautious
       ? 'To wstępna możliwość z API — część przesłanek wymaga sprawdzenia (m.in. art. 30).'
       : BENEFIT_STATUS_HEADLINE[status],

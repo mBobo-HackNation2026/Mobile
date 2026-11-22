@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { InstitutionMark } from '@/components/ui/InstitutionMark';
 import { LegalDisclaimer } from '@/components/ui/LegalDisclaimer';
 import { Screen } from '@/components/ui/Screen';
+import { BenefitExplainSection } from '@/features/benefits/BenefitExplainSection';
 import { BENEFIT_TONE, CONDITION_LABEL, CONDITION_TONE } from '@/features/benefits/benefitUi';
 import { resolveBenefitInstitution } from '@/features/benefits/resolveBenefitInstitution';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
@@ -131,6 +132,8 @@ export function BenefitDetailScreen() {
             ))
           : null}
       </Card>
+
+      <BenefitExplainSection benefit={benefit} profile={profile} />
 
       <Card>
         <Text style={styles.section}>Co mogę zrobić?</Text>

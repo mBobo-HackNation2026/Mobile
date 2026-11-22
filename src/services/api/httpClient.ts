@@ -26,6 +26,8 @@ type RequestOptions = {
   signal?: AbortSignal;
   /** Domyślnie true — dołącz Bearer, gdy token jest w bridge. */
   auth?: boolean;
+  /** Timeout żądania w ms (domyślnie 20s). Explain AI: ≥25s. */
+  timeoutMs?: number;
 };
 
 export async function apiRequest<T>(
@@ -59,7 +61,7 @@ export async function apiRequest<T>(
     body = JSON.stringify(options.body);
   }
 
-  const timeoutMs = 20_000;
+  const timeoutMs = options.timeoutMs ?? 20_000;
   const controller = new AbortController();
   const externalSignal = options.signal;
   const onExternalAbort = () => controller.abort();

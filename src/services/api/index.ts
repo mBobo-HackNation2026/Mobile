@@ -77,6 +77,7 @@ export {
   formatPlanDuration,
   formatPlanRate,
   isCautiousEligibilityResult,
+  isKnownBenefitCode,
 } from '@/services/api/eligibilityCheck';
 export type {
   BenefitCode,
@@ -87,6 +88,12 @@ export { calculateBenefitAmount } from '@/services/api/benefitsCalculate';
 export type { CalculatedAmount } from '@/services/api/benefitsCalculate';
 export { compareParentalLeave } from '@/services/api/parentalCompare';
 export type { ParentalLeaveCompareResponse } from '@/services/api/parentalCompare';
+export {
+  explainBenefitEligibility,
+  isExplainStatusAligned,
+  LEGAL_ADVISOR_TIMEOUT_MS,
+} from '@/services/api/legalAdvisorExplain';
+export type { LegalAdvisorExplainResponse } from '@/services/api/legalAdvisorExplain';
 export {
   createAnonymousSession,
   loginMobywatelDemo,

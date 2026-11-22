@@ -59,6 +59,8 @@ export interface BenefitAssessment {
   id: string;
   title: string;
   status: BenefitPresentationStatus;
+  /** Surowy status z silnika eligibility (do synchronizacji z explain). */
+  engineStatus?: string | null;
   /** Krótki komunikat zgodny ze stanem A–E. */
   headline: string;
   summary: string;

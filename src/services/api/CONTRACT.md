@@ -24,6 +24,7 @@ EXPO_PUBLIC_API_BASE_URL=…   # alias
 | POST | `/api/v1/auth/refresh` | live (store) |
 | POST | `/api/v1/auth/logout` | live |
 | POST | `/api/v1/eligibility/check/{benefit_code}` | **live × 9** — `CatalogEligibilityAdapter` |
+| POST | `/api/v1/legal-advisor/explain/{benefit_code}` | wyjaśnienie AI/fallback — ten sam payload co eligibility/check; timeout FE 25s |
 | POST | `/api/v1/benefits/calculate/{benefit_code}` | **live** — kalkulator |
 | POST | `/api/v1/benefits/compare/urlop-rodzicielski` | **live** — 3 warianty |
 | POST | `/api/v1/documents/analyze` | REST + jawny fallback mock |
