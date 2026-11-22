@@ -68,7 +68,7 @@ export default function SprawyScreen() {
       <Screen title="Moje sprawy">
         <ApiHealthBanner />
         <Card>
-          <Text style={styles.muted}>Ładujemy sprawy z FastAPI…</Text>
+          <Text style={styles.muted}>Ładujemy formalności z oceny sytuacji…</Text>
         </Card>
         <Card>
           <Text style={styles.section}>Tymczasem — plan lokalny DEMO</Text>
@@ -92,8 +92,20 @@ export default function SprawyScreen() {
   return (
     <Screen title="Moje sprawy">
       <ApiHealthBanner />
-      <DemoBanner message="Najpierw pozycje z FastAPI ([FastAPI]), potem formalności z lokalnego planu ([Plan lokalny DEMO]). Nie są decyzją ZUS." />
-      <Button label="Otwórz Mój plan" onPress={() => router.push('/home')} />
+      <DemoBanner message="Najpierw formalności z oceny Twojej sytuacji, potem podpowiedzi demonstracyjne z lokalnego planu. Żadne nie są decyzją ZUS." />
+      <View style={styles.navRow}>
+        <Button label="Mój plan" onPress={() => router.push('/home')} />
+        <Button
+          label="Świadczenia"
+          variant="secondary"
+          onPress={() => router.push('/benefits')}
+        />
+        <Button
+          label="Kalkulator"
+          variant="secondary"
+          onPress={() => router.push('/calculator')}
+        />
+      </View>
 
       {query.isError ? (
         <Card>
@@ -111,7 +123,7 @@ export default function SprawyScreen() {
           <DeadlineRadarSection items={query.data?.deadlineRadar ?? []} />
           <PostpartumKitSection kit={query.data?.postpartumKit ?? null} />
           <Card>
-            <Text style={styles.section}>Najbliższy termin (z FastAPI, jeśli data ISO)</Text>
+            <Text style={styles.section}>Najbliższy termin (gdy silnik podał konkretną datę)</Text>
             {query.data?.upcomingDeadline ? (
               <>
                 <Text style={styles.bodyStrong}>{query.data.upcomingDeadline.title}</Text>
@@ -196,6 +208,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  navRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   body: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   bodyStrong: { ...typography.bodyStrong, color: colors.text, marginBottom: spacing.xs },

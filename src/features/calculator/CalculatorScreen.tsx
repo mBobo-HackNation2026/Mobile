@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ApiHealthBanner } from '@/components/ui/ApiHealthBanner';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -11,15 +12,20 @@ import { DemoBanner } from '@/components/ui/DemoBanner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Screen } from '@/components/ui/Screen';
 import { TextField } from '@/components/ui/TextField';
-import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import {
-  ApiClientError,
+  NON_TRANSFERABLE_PARENT_NOTE,
+  UNVERIFIED_AMOUNT_NOTE,
+  hasUnverifiedRateWarning,
+  rateVariantLabel,
+} from '@/features/calculator/calculatorPresentation';
+import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
+import { apiErrorMessage } from '@/lib/apiErrorMessage';
+import {
   BENEFIT_CODE_LABEL,
   BENEFIT_CODES,
   calculateBenefitAmount,
   calculatorService,
   compareParentalLeave,
-  getApiBaseUrl,
   getApiMode,
   mapInsuranceTitle,
   profileToEligibilityCheckRequest,
@@ -38,7 +44,6 @@ export function CalculatorScreen() {
   const profile = useUserJourneyStore((s) => s.profile);
   const { columns, isCompact } = useAdaptiveLayout();
   const mode = getApiMode();
-  const baseUrl = getApiBaseUrl();
 
   const initialBenefit =
     typeof params.benefit === 'string' &&
@@ -142,27 +147,27 @@ export function CalculatorScreen() {
   return (
     <Screen
       title="Kalkulator świadczeń"
-      subtitle="Kwoty i okresy liczy FastAPI. Frontend nie przelicza stawek samodzielnie."
+      subtitle="Kwoty i okresy pochodzą z silnika. Aplikacja nie przelicza stawek samodzielnie."
     >
+      <ApiHealthBanner />
       <DemoBanner
         message={
           mode === 'rest'
-            ? 'REST: calculate/{benefit_code} oraz compare/urlop-rodzicielski. Bez cichego mocka.'
-            : 'Tryb mock — lokalne fixture DEMO, nie wyniki FastAPI.'
+            ? 'Wyniki z silnika świadczeń. Przy awarii API nie podstawiamy przykładowej kwoty.'
+            : 'Tryb demonstracyjny — lokalne przykłady, nie wynik silnika.'
         }
       />
 
       <Card>
         <Text style={styles.disclaimer}>{SIMULATION_DISCLAIMER}</Text>
+        <Text style={styles.meta}>{rateVariantLabel(fullDose21)}</Text>
       </Card>
 
       <View style={styles.headerMeta}>
-        <Badge label={mode === 'rest' ? 'REST' : 'Mock'} tone="primary" />
-        <Text style={styles.meta}>
-          {mode === 'rest'
-            ? `${baseUrl}/api/v1/benefits/calculate/{code}`
-            : 'MockCalculatorAdapter'}
-        </Text>
+        <Badge
+          label={mode === 'rest' ? 'Silnik online' : 'Demo lokalne'}
+          tone="primary"
+        />
       </View>
 
       {mode === 'rest' ? (
@@ -183,13 +188,16 @@ export function CalculatorScreen() {
           </View>
 
           <Card>
-            <Text style={styles.section}>Dane do kalkulacji (nie potwierdzenie ZUS)</Text>
+            <Text style={styles.section}>Dane do kalkulacji</Text>
+            <Text style={styles.body}>
+              To Twoje założenia do symulacji — nie potwierdzenie danych ZUS.
+            </Text>
             <TextField
               label="Średni miesięczny dochód / wynagrodzenie (PLN)"
               value={incomeA}
               onChangeText={setIncomeA}
               keyboardType="numeric"
-              hint="Wymagane do kwot procentowych. Puste = BE może zwrócić null."
+              hint="Potrzebne do kwot procentowych. Puste pole = silnik może nie zwrócić kwoty."
             />
             <ChoiceChip
               label={fullTime ? 'Pełny etat: TAK' : 'Pełny etat: NIE / nie wiem'}
@@ -208,8 +216,8 @@ export function CalculatorScreen() {
             <ChoiceChip
               label={
                 fullDose21
-                  ? 'Wniosek o pełny wymiar w 21 dni: TAK'
-                  : 'Wniosek o pełny wymiar w 21 dni: NIE'
+                  ? 'Wariant 81,5% (wniosek o pełny wymiar w 21 dni): TAK'
+                  : 'Wariant 100% / 70% (bez wniosku o pełny wymiar w 21 dni)'
               }
               selected={fullDose21}
               onPress={() => setFullDose21((v) => !v)}
@@ -225,25 +233,35 @@ export function CalculatorScreen() {
               fullWidth={isCompact}
             />
             {calcMutation.isError ? (
-              <Text style={styles.error}>
-                {calcMutation.error instanceof ApiClientError
-                  ? calcMutation.error.message
-                  : 'Nie udało się policzyć kwoty (brak fallbacku mock).'}
-              </Text>
+              <View style={styles.errorBlock}>
+                <Text style={styles.error}>
+                  {apiErrorMessage(
+                    calcMutation.error,
+                    'Nie udało się policzyć kwoty. Nie pokazujemy przykładowego wyniku.',
+                  )}
+                </Text>
+                <Button
+                  label="Spróbuj ponownie"
+                  variant="secondary"
+                  onPress={() => calcMutation.mutate()}
+                  disabled={calcMutation.isPending}
+                />
+              </View>
             ) : null}
           </Card>
 
-          {calcResult ? <CalculatedAmountCard result={calcResult} /> : null}
+          {calcResult ? (
+            <CalculatedAmountCard result={calcResult} fullDose21={fullDose21} />
+          ) : null}
 
           <Card>
             <Text style={styles.section}>Porównanie urlopu rodzicielskiego</Text>
             <Text style={styles.body}>
-              Wstępne porównanie trzech wariantów z FastAPI. Nie oznaczamy automatycznie
-              „najlepszego” wariantu. Uproszczenia stawek 81,5%/70% i 9 tygodni
-              nieprzenoszalnych — w ostrzeżeniach API.
+              Trzy warianty podziału z silnika. Nie oznaczamy automatycznie „najlepszego”.
             </Text>
+            <Text style={styles.callout}>{NON_TRANSFERABLE_PARENT_NOTE}</Text>
             <TextField
-              label="Dochód rodzica B (PLN)"
+              label="Dochód drugiego rodzica (PLN)"
               value={incomeB}
               onChangeText={setIncomeB}
               keyboardType="numeric"
@@ -259,20 +277,31 @@ export function CalculatorScreen() {
               disabled={compareMutation.isPending}
             />
             {compareMutation.isError ? (
-              <Text style={styles.error}>
-                {compareMutation.error instanceof ApiClientError
-                  ? compareMutation.error.message
-                  : 'Porównanie niedostępne.'}
-              </Text>
+              <View style={styles.errorBlock}>
+                <Text style={styles.error}>
+                  {apiErrorMessage(
+                    compareMutation.error,
+                    'Porównanie niedostępne. Spróbuj ponownie — bez podstawiania kwoty.',
+                  )}
+                </Text>
+                <Button
+                  label="Spróbuj ponownie"
+                  variant="secondary"
+                  onPress={() => compareMutation.mutate()}
+                  disabled={compareMutation.isPending}
+                />
+              </View>
             ) : null}
           </Card>
 
-          {compareResult ? <CompareCard result={compareResult} /> : null}
+          {compareResult ? (
+            <CompareCard result={compareResult} fullDose21={fullDose21} />
+          ) : null}
         </>
       ) : (
         <View style={[styles.layout, columns > 1 && styles.layoutRow]}>
           <Card style={columns > 1 ? styles.side : undefined}>
-            <Text style={styles.section}>Mock — lokalne warianty</Text>
+            <Text style={styles.section}>Demo lokalne — przykładowe warianty</Text>
             <Button
               label={calcMutation.isPending ? 'Liczymy…' : 'Policz warianty DEMO'}
               onPress={() => calcMutation.mutate()}
@@ -287,7 +316,7 @@ export function CalculatorScreen() {
                   <Text style={styles.meta}>
                     Kwota:{' '}
                     {scenario.grossAmount == null
-                      ? 'niedostępna (null)'
+                      ? 'niedostępna'
                       : `${scenario.grossAmount} PLN`}
                   </Text>
                 </View>
@@ -301,7 +330,13 @@ export function CalculatorScreen() {
   );
 }
 
-function CalculatedAmountCard({ result }: { result: CalculatedAmount }) {
+function CalculatedAmountCard({
+  result,
+  fullDose21,
+}: {
+  result: CalculatedAmount;
+  fullDose21: boolean;
+}) {
   const zeroLikeAmount = isZeroAmount(result.total_amount_zl);
   const zeroDays = result.total_days === 0;
   const ambiguousZero = zeroLikeAmount && zeroDays;
@@ -309,39 +344,46 @@ function CalculatedAmountCard({ result }: { result: CalculatedAmount }) {
     result.lump_sum_amount_zl != null &&
     result.lump_sum_amount_zl !== '' &&
     result.total_days == null;
+  const unverified = hasUnverifiedRateWarning(result.warnings);
 
   return (
     <Card>
-      <Badge label="Wynik calculate" tone="primary" />
+      <Badge
+        label={unverified ? 'Kwota wstępna — do weryfikacji' : 'Wynik z silnika'}
+        tone={unverified ? 'warning' : 'primary'}
+      />
       <Text style={styles.cardTitle}>{result.benefit_name}</Text>
       <Text style={styles.disclaimer}>{SIMULATION_DISCLAIMER}</Text>
+      <Text style={styles.meta}>{rateVariantLabel(fullDose21)}</Text>
+      {unverified ? <Text style={styles.warn}>{UNVERIFIED_AMOUNT_NOTE}</Text> : null}
       {ambiguousZero ? (
         <Text style={styles.warn}>
           Silnik zwrócił 0 dni i 0 zł przy tych danych. To może oznaczać brak wymiaru dla
-          podanych parametrów (np. brak hospitalizacji dla uzupełniającego urlopu), a nie
-          ostateczną odmowę. Uzupełnij dane w ankiecie i policz ponownie — nie traktujemy
-          tego jako przyznanego ani odebranego świadczenia.
+          podanych parametrów (np. brak hospitalizacji), a nie ostateczną odmowę.
         </Text>
       ) : null}
       <AmountRow
         label="Łączna kwota"
         value={
           ambiguousZero
-            ? '0 zł (wymiar nieustalony / brak okresu w odpowiedzi)'
+            ? '0 zł (wymiar nieustalony)'
             : formatNullableZl(result.total_amount_zl)
         }
+        emphasize={!unverified && !ambiguousZero}
       />
-      <AmountRow
-        label="Ryczałt"
-        value={formatNullableZl(result.lump_sum_amount_zl)}
-      />
+      {unverified && result.total_amount_zl ? (
+        <Text style={styles.meta}>
+          Kwota wyświetlona, ale oznaczona jako nieweryfikowana z powodu ostrzeżeń silnika.
+        </Text>
+      ) : null}
+      <AmountRow label="Ryczałt" value={formatNullableZl(result.lump_sum_amount_zl)} />
       <AmountRow
         label="Liczba dni"
         value={
           result.total_days == null
             ? isLumpSum
               ? 'nie dotyczy (świadczenie kwotowe)'
-              : 'nieznana (null)'
+              : 'nieznana'
             : String(result.total_days)
         }
       />
@@ -349,7 +391,8 @@ function CalculatedAmountCard({ result }: { result: CalculatedAmount }) {
         <>
           <Text style={styles.meta}>
             Podstawa miesięczna: {result.basis.monthly_basis_zl} zł · dzienna:{' '}
-            {result.basis.daily_basis_zl} zł
+            {result.basis.daily_basis_zl} zł · potrącenie:{' '}
+            {result.basis.deduction_rate_percent}%
           </Text>
           {result.basis.minimum_basis_applied ? (
             <Badge label="Zastosowano podstawę minimalną" tone="warning" />
@@ -363,17 +406,21 @@ function CalculatedAmountCard({ result }: { result: CalculatedAmount }) {
       ) : (
         <Text style={styles.meta}>Brak podstawy wymiaru (np. świadczenie ryczałtowe).</Text>
       )}
-      {result.rate_breakdown.map((period, index) => (
-        <Text key={`${period.days}-${index}`} style={styles.meta}>
-          {period.days} dni · {period.rate_percentage}% · {period.amount_zl} zł
-        </Text>
-      ))}
+      {result.rate_breakdown.length > 0 ? (
+        <>
+          <Text style={styles.sectionSmall}>Okresy i stawki z odpowiedzi silnika</Text>
+          {result.rate_breakdown.map((period, index) => (
+            <Text key={`${period.days}-${index}`} style={styles.meta}>
+              {period.days} dni · {period.rate_percentage}% · {period.amount_zl} zł
+            </Text>
+          ))}
+        </>
+      ) : null}
       {result.warnings.map((w) => (
         <Text key={w} style={styles.warn}>
           {w}
         </Text>
       ))}
-      <Text style={styles.meta}>rules_version: {result.rules_version}</Text>
     </Card>
   );
 }
@@ -384,17 +431,38 @@ function isZeroAmount(value: string | null | undefined): boolean {
   return Number.isFinite(n) && n === 0;
 }
 
-function CompareCard({ result }: { result: ParentalLeaveCompareResponse }) {
+function CompareCard({
+  result,
+  fullDose21,
+}: {
+  result: ParentalLeaveCompareResponse;
+  fullDose21: boolean;
+}) {
+  const unverified = hasUnverifiedRateWarning(result.warnings);
+  const nonTransferable = result.non_transferable_weeks_per_parent;
+
   return (
     <Card>
-      <Badge label="Wstępne porównanie" tone="warning" />
+      <Badge
+        label={unverified ? 'Porównanie wstępne — do weryfikacji' : 'Porównanie z silnika'}
+        tone={unverified ? 'warning' : 'primary'}
+      />
       <Text style={styles.cardTitle}>Urlop rodzicielski — 3 warianty</Text>
+      <Text style={styles.meta}>{rateVariantLabel(fullDose21)}</Text>
       <Text style={styles.meta}>
-        Pula: {result.total_pool_weeks} tyg. · nieprzenoszalne:{' '}
-        {result.non_transferable_weeks_per_parent} tyg./rodzic · stawka modelu:{' '}
+        Pula: {result.total_pool_weeks} tyg. · stawka modelu w odpowiedzi:{' '}
         {result.rate_percentage}%
       </Text>
+      <View style={styles.reservedBlock}>
+        <Badge label={`${nonTransferable} tyg. zarezerwowane / rodzic`} tone="warning" />
+        <Text style={styles.callout}>{NON_TRANSFERABLE_PARENT_NOTE}</Text>
+        <Text style={styles.body}>
+          Silnik podaje {nonTransferable} nieprzenoszalnych tygodni na rodzica. Kwoty poniżej
+          pochodzą wyłącznie z API — frontend ich nie przelicza.
+        </Text>
+      </View>
       <Text style={styles.disclaimer}>{SIMULATION_DISCLAIMER}</Text>
+      {unverified ? <Text style={styles.warn}>{UNVERIFIED_AMOUNT_NOTE}</Text> : null}
       {result.variants.map((variant) => (
         <View key={variant.label} style={styles.variant}>
           <Text style={styles.cardTitle}>{variant.label}</Text>
@@ -406,8 +474,9 @@ function CompareCard({ result }: { result: ParentalLeaveCompareResponse }) {
             Rodzic B: {variant.weeks_parent_b} tyg. ·{' '}
             {formatNullableZl(variant.amount_parent_b_zl)}
           </Text>
-          <Text style={styles.bodyStrong}>
+          <Text style={unverified ? styles.body : styles.bodyStrong}>
             Suma rodzinna: {formatNullableZl(variant.total_household_amount_zl)}
+            {unverified ? ' (wstępna)' : ''}
           </Text>
         </View>
       ))}
@@ -420,16 +489,25 @@ function CompareCard({ result }: { result: ParentalLeaveCompareResponse }) {
   );
 }
 
-function AmountRow({ label, value }: { label: string; value: string }) {
+function AmountRow({
+  label,
+  value,
+  emphasize,
+}: {
+  label: string;
+  value: string;
+  emphasize?: boolean;
+}) {
   return (
     <Text style={styles.body}>
-      {label}: <Text style={styles.bodyStrong}>{value}</Text>
+      {label}:{' '}
+      <Text style={emphasize ? styles.bodyStrong : styles.body}>{value}</Text>
     </Text>
   );
 }
 
 function formatNullableZl(value: string | null | undefined): string {
-  if (value == null || value === '') return 'niedostępna (null)';
+  if (value == null || value === '') return 'niedostępna';
   return `${value} zł`;
 }
 
@@ -447,9 +525,19 @@ function shortLabel(code: BenefitCode): string {
 
 const styles = StyleSheet.create({
   headerMeta: { gap: spacing.xs },
-  meta: { ...typography.small, color: colors.textMuted },
+  meta: { ...typography.small, color: colors.textMuted, marginTop: 4 },
   section: { ...typography.h3, color: colors.text, marginBottom: spacing.sm },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
+  sectionSmall: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    marginTop: spacing.sm,
+  },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
   layout: { gap: spacing.md },
   layoutRow: { flexDirection: 'row', alignItems: 'flex-start' },
   side: { flex: 1 },
@@ -463,7 +551,23 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   warn: { ...typography.small, color: colors.warning, marginTop: 4 },
-  error: { ...typography.small, color: colors.danger, marginTop: spacing.sm },
+  error: { ...typography.small, color: colors.danger },
+  errorBlock: { gap: spacing.sm, marginTop: spacing.sm },
+  callout: {
+    ...typography.small,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  reservedBlock: {
+    marginTop: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.warning,
+    backgroundColor: colors.warningSoft,
+    gap: spacing.xs,
+  },
   variant: {
     marginTop: spacing.sm,
     paddingTop: spacing.sm,

@@ -38,7 +38,7 @@ export function deriveFormalitiesFromBenefits(
         checklist.push({
           id: `api-missing-${benefit.id}`,
           title: `Uzupełnij dane: ${benefit.title}`,
-          description: `[FastAPI] ${benefit.summary} Źródło: eligibility/check — nie lokalny plan DEMO.`,
+          description: `[FastAPI] Z oceny Twojej sytuacji: ${benefit.summary} To nie lokalna podpowiedź DEMO ani decyzja ZUS.`,
           status: 'todo',
           dueDate: null,
           documents: [],
@@ -60,12 +60,12 @@ export function deriveFormalitiesFromBenefits(
       id: `api-proc-${benefit.id}`,
       title: `Wniosek / formalności: ${benefit.title}`,
       description: [
-        '[FastAPI]',
+        '[FastAPI] Z oceny Twojej sytuacji.',
         procedure.formCode ? `Formularz: ${procedure.formCode}.` : null,
         procedure.submitBy && !isoDue
-          ? `Termin (opis API): ${procedure.submitBy}.`
+          ? `Termin: ${procedure.submitBy}.`
           : null,
-        'To nie jest decyzja ZUS — wynik silnika na podstawie Twoich danych.',
+        'To nie jest decyzja ZUS.',
       ]
         .filter(Boolean)
         .join(' '),

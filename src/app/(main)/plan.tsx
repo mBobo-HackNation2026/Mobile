@@ -85,10 +85,10 @@ export default function PlanScreen() {
   return (
     <Screen
       title="Checklista i terminy"
-      subtitle="Filtry po priorytecie. Pozycje [FastAPI] vs [Plan lokalny DEMO] są rozdzielone w opisie."
+      subtitle="Filtry po priorytecie. W opisie widać, czy pozycja pochodzi z oceny sytuacji, czy z lokalnej podpowiedzi DEMO."
     >
       <ApiHealthBanner />
-      <DemoBanner message="To widok filtrów formalności. Pełny chronologiczny Mój plan: /home." />
+      <DemoBanner message="Filtry formalności. Pełną oś czasu znajdziesz w Mój plan." />
 
       {query.isLoading ? (
         <Card>

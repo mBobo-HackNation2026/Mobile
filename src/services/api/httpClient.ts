@@ -83,8 +83,8 @@ export async function apiRequest<T>(
       controller.signal.aborted;
     throw new ApiClientError(
       aborted
-        ? 'Przekroczono czas oczekiwania na FastAPI. Sprawdź tunel / CORS albo ponów.'
-        : 'Brak połączenia z serwerem. Sprawdź EXPO_PUBLIC_API_URL albo użyj scenariuszy demo, gdy tunel jest niedostępny.',
+        ? 'Serwer nie odpowiedział na czas. Sprawdź połączenie lub tunel i spróbuj ponownie.'
+        : 'Brak połączenia z silnikiem świadczeń. Lokalny plan DEMO działa — ocena i kalkulator wymagają API.',
       0,
       null,
       aborted ? 'timeout' : 'network_error',

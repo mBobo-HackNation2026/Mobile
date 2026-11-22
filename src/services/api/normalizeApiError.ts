@@ -63,6 +63,13 @@ export function normalizeApiError(
   if (status === 404 && message === fallbackMessage) {
     message = 'Nie znaleziono zasobu lub ścieżka świadczenia nie jest obsługiwana';
   }
+  if (
+    (status === 500 || status === 502 || status === 503) &&
+    (message === fallbackMessage || /^Internal Server Error$/i.test(message))
+  ) {
+    message =
+      'Silnik świadczeń zwrócił błąd serwera. Spróbuj ponownie — nie podstawiamy przykładowej kwoty.';
+  }
 
   return { status, message, code, fieldErrors, body };
 }

@@ -5,7 +5,10 @@ import { Button } from '@/components/ui/Button';
 import { checkApiHealth, getApiMode } from '@/services/api';
 import { colors, radii, spacing, typography } from '@/theme';
 
-/** Widoczny status połączenia z FastAPI w trybie REST — bez ukrywania awarii. */
+/**
+ * Status dostępności usługi FastAPI (health).
+ * Osobne od błędów konkretnych operacji (eligibility/calculate) — te mają własne komunikaty i „Spróbuj ponownie”.
+ */
 export function ApiHealthBanner() {
   const mode = getApiMode();
   const query = useQuery({
@@ -20,7 +23,7 @@ export function ApiHealthBanner() {
     return (
       <View style={[styles.banner, styles.mock]} accessibilityRole="text">
         <Text style={styles.text}>
-          Tryb mock — wyniki świadczeń i kwot są lokalnymi fixture’ami DEMO, nie FastAPI.
+          Tryb demonstracyjny — przykładowe wyniki lokalne. To nie jest ocena z silnika ZUS.
         </Text>
       </View>
     );
@@ -29,7 +32,7 @@ export function ApiHealthBanner() {
   if (query.isLoading) {
     return (
       <View style={[styles.banner, styles.pending]} accessibilityRole="text">
-        <Text style={styles.text}>Sprawdzam połączenie z silnikiem FastAPI…</Text>
+        <Text style={styles.text}>Sprawdzam, czy silnik świadczeń odpowiada…</Text>
       </View>
     );
   }
@@ -37,12 +40,10 @@ export function ApiHealthBanner() {
   if (query.isError || !query.data?.ok) {
     return (
       <View style={[styles.banner, styles.error]} accessibilityRole="alert">
-        <Text style={styles.textStrong}>Brak połączenia z FastAPI</Text>
+        <Text style={styles.textStrong}>Silnik świadczeń jest teraz niedostępny</Text>
         <Text style={styles.text}>
           {query.data?.detail ??
-            (query.error instanceof Error
-              ? query.error.message
-              : 'Ocena świadczeń i kalkulator wymagają działającego backendu. Sprawdź ngrok / API i spróbuj ponownie.')}
+            'Nie możemy teraz pobrać oceny uprawnień ani wyliczyć kwot. Lokalny plan DEMO i nawigacja działają — bez przykładowych kwot zamiast wyniku.'}
         </Text>
         <Button
           label="Sprawdź ponownie"
@@ -55,7 +56,10 @@ export function ApiHealthBanner() {
 
   return (
     <View style={[styles.banner, styles.ok]} accessibilityRole="text">
-      <Text style={styles.text}>Połączenie z FastAPI: OK ({query.data.detail})</Text>
+      <Text style={styles.text}>
+        Połączenie z silnikiem: OK. Jeśli pojedyncze wyliczenie się nie uda, zobaczysz komunikat
+        przy tej operacji — to coś innego niż brak całego serwisu.
+      </Text>
     </View>
   );
 }

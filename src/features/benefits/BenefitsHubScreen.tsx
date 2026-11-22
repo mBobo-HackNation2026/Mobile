@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, router, type Href } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ApiHealthBanner } from '@/components/ui/ApiHealthBanner';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -48,7 +49,8 @@ export function BenefitsHubScreen() {
 
   if (query.isLoading) {
     return (
-      <Screen>
+      <Screen title="Moje świadczenia">
+        <ApiHealthBanner />
         <Card>
           <Text style={styles.muted}>Analizujemy potencjalne uprawnienia…</Text>
         </Card>
@@ -58,18 +60,20 @@ export function BenefitsHubScreen() {
 
   if (query.isError || !query.data) {
     return (
-      <Screen>
+      <Screen title="Moje świadczenia">
+        <ApiHealthBanner />
         <EmptyState
           title="Nie udało się ocenić świadczeń"
           description={apiErrorMessage(
             query.error,
             mode === 'rest'
-              ? 'Sprawdź połączenie z API albo ustaw EXPO_PUBLIC_API_MODE=mock.'
-              : 'Spróbuj ponownie — mock powinien działać offline.',
+              ? 'Silnik nie odpowiedział. Lokalny plan DEMO w „Mój plan” nadal działa — bez przykładowych kwot zamiast wyniku.'
+              : 'Spróbuj ponownie — tryb demonstracyjny powinien działać offline.',
           )}
           actionLabel="Spróbuj ponownie"
           onAction={() => query.refetch()}
         />
+        <Button label="Otwórz Mój plan DEMO" onPress={() => router.push('/home')} />
       </Screen>
     );
   }
@@ -81,11 +85,12 @@ export function BenefitsHubScreen() {
       title="Moje świadczenia"
       subtitle="Zasiłki i urlopy ZUS — ocena na podstawie Twoich danych, przeszkody i kolejny krok do wniosku. Świadczenia poza ZUS (bez silnika oceny) są na osobnym ekranie."
     >
+      <ApiHealthBanner />
       <DemoBanner
         message={
           mode === 'rest'
-            ? '9 świadczeń: FastAPI /eligibility/check/{code}. Bez cichego mocka. To nie jest decyzja ZUS. Deklaracja ankiety ≠ potwierdzenie ZUS.'
-            : 'Ocena jest symulacją mock — nie decyzją ZUS. Ustaw EXPO_PUBLIC_API_MODE=rest, by podłączyć silnik.'
+            ? 'Ocena dziewięciu świadczeń z silnika na podstawie Twoich danych. To nie decyzja ZUS — deklaracja w ankiecie nie zastępuje potwierdzenia.'
+            : 'Ocena demonstracyjna lokalna — nie decyzja ZUS.'
         }
       />
 
@@ -126,12 +131,12 @@ export function BenefitsHubScreen() {
       </Card>
 
       <Card>
-        <Badge label={mode === 'rest' ? 'FastAPI katalog 9' : 'Mock'} tone="primary" />
+        <Badge label={mode === 'rest' ? 'Silnik' : 'Demo'} tone="primary" />
         <Text style={styles.cardTitle}>Kalkulator i porównanie</Text>
         <Text style={styles.body}>
           {mode === 'rest'
-            ? 'Kwoty: POST /benefits/calculate/{code}. Podział rodzicielskiego: compare/urlop-rodzicielski.'
-            : 'W trybie mock kalkulator używa lokalnych fixture’ów DEMO.'}
+            ? 'Tu sprawdzisz szacowaną kwotę i warianty podziału urlopu rodzicielskiego, w tym 9 tygodni zarezerwowanych dla drugiego rodzica (70%).'
+            : 'W trybie demonstracyjnym kalkulator używa lokalnych przykładów.'}
         </Text>
         <Button
           label="Otwórz kalkulator"

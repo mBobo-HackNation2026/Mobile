@@ -12,7 +12,7 @@ export function planTasksToChecklist(tasks: PlanTask[]): ChecklistItem[] {
     .map((task) => ({
       id: `local-plan-${task.id}`,
       title: task.title,
-      description: `[Plan lokalny DEMO] ${task.summary} Nie zastępuje wyniku FastAPI ani decyzji ZUS.`,
+      description: `[Plan lokalny DEMO] Podpowiedź demonstracyjna: ${task.summary} Nie zastępuje oceny z silnika ani decyzji ZUS.`,
       status: task.status,
       dueDate: task.dueDate,
       documents: task.documents,

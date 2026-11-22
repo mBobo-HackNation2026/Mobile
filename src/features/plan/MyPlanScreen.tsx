@@ -89,7 +89,7 @@ export function MyPlanScreen() {
   return (
     <Screen title="Mój plan">
       <ApiHealthBanner />
-      <DemoBanner message="To lokalny plan DEMO (oś czasu). Ocena prawna i wnioski z FastAPI są w Świadczeniach; formalności API+DEMO także w Moich sprawach." />
+      <DemoBanner message="To lokalny plan demonstracyjny (oś czasu). Ocenę uprawnień i kwoty znajdziesz w Świadczeniach i Kalkulatorze; formalności także w Moich sprawach." />
 
       <Card>
         <Text style={styles.stage}>{plan.timeline.stageLabel}</Text>
@@ -114,11 +114,14 @@ export function MyPlanScreen() {
           <Link href="/benefits">
             <Text style={styles.quickLink}>Świadczenia →</Text>
           </Link>
+          <Link href="/sprawy">
+            <Text style={styles.quickLink}>Moje sprawy →</Text>
+          </Link>
+          <Link href="/calculator">
+            <Text style={styles.quickLink}>Kalkulator →</Text>
+          </Link>
           <Link href="/calendar">
             <Text style={styles.quickLink}>Kalendarz →</Text>
-          </Link>
-          <Link href="/map">
-            <Text style={styles.quickLink}>Mapa →</Text>
           </Link>
         </View>
       </Card>

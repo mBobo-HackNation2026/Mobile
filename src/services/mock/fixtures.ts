@@ -176,15 +176,15 @@ export const demoProfiles: Record<string, ParentProfile> = {
 export const DEMO_SCENARIO_META = [
   {
     id: 'pregnant_employee',
-    title: 'Pracownica w ciąży',
+    title: 'S1 — Pracownica w ciąży (UoP)',
     description:
-      'Umowa o pracę, ubezpieczenie chorobowe, termin porodu za ok. 3 miesiące (data względna DEMO).',
+      'Umowa o pracę, ubezpieczenie chorobowe, termin porodu za ok. 3 miesiące (data względna). Ścieżka: ankieta → świadczenia → plan → dokumenty → kalkulator.',
   },
   {
     id: 'both_parents_split',
-    title: 'Oboje rodzice — podział urlopu',
+    title: 'S2 — Rodzice po narodzinach',
     description:
-      'Po porodzie (~6 tyg.), oboje ubezpieczeni — porównanie wariantów urlopu rodzicielskiego.',
+      'Po porodzie (~6 tyg.), oboje ubezpieczeni. Macierzyński → rodzicielski → porównanie z 9 tyg. drugiego rodzica (70%) → kalkulator.',
   },
   {
     id: 'no_insurance',
@@ -193,8 +193,9 @@ export const DEMO_SCENARIO_META = [
   },
   {
     id: 'self_employed',
-    title: 'Działalność gospodarcza',
-    description: 'Przedsiębiorczyni z dobrowolnym ubezpieczeniem chorobowym.',
+    title: 'S3 — Działalność gospodarcza',
+    description:
+      'Przedsiębiorczyni z dobrowolnym ubezpieczeniem chorobowym. Ankieta → ubezpieczenie → świadczenia → dokumenty → weryfikacja.',
   },
   {
     id: 'adoption',
