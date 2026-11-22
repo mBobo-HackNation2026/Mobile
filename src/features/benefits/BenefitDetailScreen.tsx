@@ -210,6 +210,22 @@ export function BenefitDetailScreen() {
         />
       ) : null}
 
+      {calm || benefit.id === 'uzupelniajacy_urlop_macierzynski' ? (
+        <Card style={styles.calmCard}>
+          <Text style={styles.section}>Gdzie szukać pomocy</Text>
+          <Text style={styles.body}>
+            W szczególnych sytuacjach możesz sprawdzić zweryfikowane organizacje
+            charytatywne — bez nachalnego marketingu.
+          </Text>
+          <Button
+            label="Otwórz listę wsparcia"
+            variant="secondary"
+            onPress={() => router.push('/help')}
+            fullWidth
+          />
+        </Card>
+      ) : null}
+
       {/* 5. Co dalej? */}
       <Card>
         <Text style={styles.section}>Co dalej?</Text>

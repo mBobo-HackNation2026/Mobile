@@ -138,9 +138,9 @@ export default function WelcomeScreen() {
                   />
                 ) : (
                   <Button
-                    label="Przykładowy profil ZUS (demo)"
+                    label="Sprawdź przykładową sprawę"
                     variant="secondary"
-                    onPress={() => router.push('/demo')}
+                    onPress={() => router.push('/sample-cases')}
                     fullWidth={isCompact}
                   />
                 )}

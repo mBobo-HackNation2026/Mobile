@@ -86,7 +86,16 @@ export default function ProfileScreen() {
         <Button label="Mój plan" variant="secondary" onPress={() => router.push('/home')} />
         <Button label="Edytuj ankietę" variant="secondary" onPress={() => router.push('/onboarding')} />
         <Button label="Dane ZUS (symulacja)" variant="secondary" onPress={() => router.push('/zus')} />
-        <Button label="Przykładowe profile" variant="secondary" onPress={() => router.push('/demo')} />
+        <Button
+          label="Sprawdź przykładową sprawę"
+          variant="secondary"
+          onPress={() => router.push('/sample-cases')}
+        />
+        <Button
+          label="Gdzie szukać pomocy"
+          variant="secondary"
+          onPress={() => router.push('/help')}
+        />
         <Button label="Menu skrótów" variant="ghost" onPress={() => router.push('/home-menu')} />
         <Button
           label="Wyczyść dane lokalne"

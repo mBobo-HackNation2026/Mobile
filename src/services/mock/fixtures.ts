@@ -171,6 +171,45 @@ export const demoProfiles: Record<string, ParentProfile> = {
     isDemo: true,
     demoScenarioId: 'exceptional',
   },
+  preemie: {
+    stage: 'after_birth',
+    role: 'mother',
+    eventDate: demoDate(-21),
+    employmentType: 'employment_contract',
+    insuranceStatus: 'insured',
+    hasSecondParent: true,
+    childrenCount: 1,
+    specialCircumstances: [],
+    ...baseExtras,
+    isPregnant: false,
+    childAgeMonths: 0,
+    gestationalWeekAtBirth: 30,
+    birthWeightGrams: 1400,
+    childHospitalizationWeeks: 5,
+    isFullTimeEmployment: true,
+    fatherInsured: true,
+    onboardingCompleted: true,
+    isDemo: true,
+    demoScenarioId: 'preemie',
+  },
+  stillbirth: {
+    stage: 'after_birth',
+    role: 'mother',
+    eventDate: demoDate(-14),
+    employmentType: 'employment_contract',
+    insuranceStatus: 'insured',
+    hasSecondParent: true,
+    childrenCount: 0,
+    specialCircumstances: [],
+    ...baseExtras,
+    isStillbirthOrInfantDeath: true,
+    daysSinceDeath: 14,
+    daysSinceBurial: 10,
+    isFullTimeEmployment: true,
+    onboardingCompleted: true,
+    isDemo: true,
+    demoScenarioId: 'stillbirth',
+  },
 };
 
 export const DEMO_SCENARIO_META = [
@@ -211,6 +250,18 @@ export const DEMO_SCENARIO_META = [
     id: 'exceptional',
     title: 'Sytuacja wyjątkowa',
     description: 'Ojciec, umowa cywilna, niepewny status ubezpieczenia.',
+  },
+  {
+    id: 'preemie',
+    title: 'S6 — Wcześniak',
+    description:
+      'Poród w 30. tygodniu, hospitalizacja 5 tyg. — uzupełniający urlop macierzyński.',
+  },
+  {
+    id: 'stillbirth',
+    title: 'S7 — Martwe urodzenie',
+    description:
+      'Spokojna ścieżka: zasiłek pogrzebowy / formalności — bez marketingowego tonu.',
   },
 ] as const;
 

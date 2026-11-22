@@ -28,12 +28,14 @@ export const mainNavItems: NavItem[] = [
 /** Dodatkowe linki w expanded sidebar / menu skrótów */
 export const secondaryNavItems = [
   { href: '/home-menu' as const, label: 'Menu skrótów' },
+  { href: '/sample-cases' as const, label: 'Przykładowe sprawy' },
+  { href: '/help' as const, label: 'Gdzie szukać pomocy' },
   { href: '/calendar' as const, label: 'Kalendarz' },
   { href: '/map' as const, label: 'Mapa placówek' },
   { href: '/plan' as const, label: 'Checklista (filtry)' },
   { href: '/documents' as const, label: 'Dokumenty' },
-  { href: '/zus' as const, label: 'Dane ZUS' },
-  { href: '/demo' as const, label: 'Profile demo' },
+  { href: '/zus' as const, label: 'Dane ZUS (symulacja)' },
+  { href: '/demo' as const, label: 'Przykładowe sprawy' },
   { href: '/other-benefits' as const, label: 'Inne świadczenia' },
   { href: '/eligibility' as const, label: 'Ocena API (macierzyński)' },
 ];

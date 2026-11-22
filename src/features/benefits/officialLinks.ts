@@ -55,6 +55,17 @@ export const OFFICIAL_LINK_ALLOWED_HOSTS = [
   'gov.pl',
   'www.pip.gov.pl',
   'pip.gov.pl',
+  'razemnamaksa.pl',
+  'www.razemnamaksa.pl',
+  'utrata.donumvitae.pl',
+  'donumvitae.pl',
+  'www.donumvitae.pl',
+  'teczowykocyk.pl',
+  'www.teczowykocyk.pl',
+  'wczesniak.pl',
+  'www.wczesniak.pl',
+  'gajusz.org.pl',
+  'www.gajusz.org.pl',
 ] as const;
 
 export const EZUS_ENTRY: OfficialLink = {
