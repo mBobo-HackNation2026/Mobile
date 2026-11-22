@@ -26,8 +26,8 @@ import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, radii, spacing, typography } from '@/theme';
 
 /**
- * Mój Plan — hierarchia Etapu 12:
- * sytuacja → możliwości (eligibility) → co teraz → formalności API → DEMO lokalne.
+ * Mój Plan — co mam teraz zrobić?
+ * sytuacja → możliwości → priorytet → formalności → wskazówki pomocnicze.
  */
 export function MyPlanScreen() {
   const profile = useUserJourneyStore((s) => s.profile);
@@ -77,13 +77,11 @@ export function MyPlanScreen() {
   const apiDeadline = evaluation?.upcomingDeadline ?? null;
 
   return (
-    <Screen title="Mój plan" subtitle="Ocena uprawnień i kolejny krok.">
+    <Screen title="Mój plan" subtitle="Co masz teraz zrobić.">
       <ApiHealthBanner />
-      {evaluation && !evaluation.isDemo ? (
-        <DemoBanner message="Podsumowanie uprawnień pochodzi z silnika FastAPI — to nie decyzja ZUS. Wskazówki lokalne poniżej są oznaczone jako DEMO." />
-      ) : (
-        <DemoBanner message="Trwa łączenie z oceną uprawnień. Lokalne wskazówki DEMO nie zastępują wyniku silnika." />
-      )}
+      {!evaluation ? (
+        <DemoBanner message="Trwa łączenie z oceną uprawnień. Poniższe wskazówki nie zastępują wyniku oceny." />
+      ) : null}
 
       <View style={[styles.stack, twoCol && styles.stackDesktop]}>
         <View style={[styles.col, twoCol && styles.colMain]}>
@@ -256,27 +254,25 @@ export function MyPlanScreen() {
             />
           </View>
 
-          {/* Lokalne DEMO — wyraźnie oddzielone */}
           <View style={styles.block}>
-            <Text style={styles.blockTitle}>Wskazówki lokalne (DEMO)</Text>
+            <Text style={styles.blockTitle}>Wskazówki pomocnicze</Text>
             <Card>
               <Text style={styles.emptyCopy}>
-                To pomocnicze zadania z lokalnego planu demonstracyjnego — nie są
-                zatwierdzone przez silnik uprawnień.
+                To lokalne przypomnienia na podstawie Twojej ankiety — nie zastępują
+                oceny uprawnień.
               </Text>
               {localPlan.nextDeadline ? (
                 <Text style={styles.meta}>
-                  DEMO termin: {localPlan.nextDeadline.title} (
+                  Orientacyjny termin: {localPlan.nextDeadline.title} (
                   {formatShortDatePl(localPlan.nextDeadline.date)})
                 </Text>
               ) : (
                 <Text style={styles.meta}>
-                  Brak sztywnej daty w lokalnych zadaniach DEMO.
+                  Brak sztywnej daty w lokalnych wskazówkach.
                 </Text>
               )}
               <Text style={styles.meta}>
-                Otwarte lokalnie: {localPlan.openCount} · zrobione:{' '}
-                {localPlan.doneCount}
+                Otwarte: {localPlan.openCount} · zrobione: {localPlan.doneCount}
               </Text>
             </Card>
           </View>

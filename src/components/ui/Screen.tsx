@@ -16,13 +16,15 @@ import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import { computeScrollProgress } from '@/lib/scrollProgress';
 import { colors, spacing } from '@/theme';
 
-/** Start (Mój plan) — bez „Wróć”. */
-const HOME_PATHS = new Set(['/home', '/']);
+/** Start (Świadczenia) — bez „Wróć”. */
+const HOME_PATHS = new Set(['/benefits', '/home', '/']);
 /** Zakładki dolnego menu — „Wróć” tylko gdy jest historia. */
 const TAB_PATHS = new Set([
   '/home',
+  '/sprawy',
   '/calendar',
   '/benefits',
+  '/calculator',
   '/map',
   '/profile',
 ]);
@@ -61,7 +63,7 @@ export function Screen({
   keyboardOffset = 0,
   back,
   backLabel,
-  backFallbackHref = '/home',
+  backFallbackHref = '/benefits',
   title,
   // subtitle — opisy w tytule tymczasowo wyłączone
   // subtitle,

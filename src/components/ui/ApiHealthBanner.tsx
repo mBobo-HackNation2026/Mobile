@@ -23,7 +23,7 @@ export function ApiHealthBanner() {
     return (
       <View style={[styles.banner, styles.mock]} accessibilityRole="text">
         <Text style={styles.text}>
-          Tryb demonstracyjny — przykładowe wyniki lokalne. To nie jest ocena z silnika ZUS.
+          Pracujesz na lokalnych danych przykładowych — to nie jest ocena z konta ZUS.
         </Text>
       </View>
     );
@@ -32,7 +32,7 @@ export function ApiHealthBanner() {
   if (query.isLoading) {
     return (
       <View style={[styles.banner, styles.pending]} accessibilityRole="text">
-        <Text style={styles.text}>Sprawdzam, czy silnik świadczeń odpowiada…</Text>
+        <Text style={styles.text}>Sprawdzam dostępność oceny świadczeń…</Text>
       </View>
     );
   }
@@ -40,10 +40,10 @@ export function ApiHealthBanner() {
   if (query.isError || !query.data?.ok) {
     return (
       <View style={[styles.banner, styles.error]} accessibilityRole="alert">
-        <Text style={styles.textStrong}>Silnik świadczeń jest teraz niedostępny</Text>
+        <Text style={styles.textStrong}>Ocena świadczeń jest teraz niedostępna</Text>
         <Text style={styles.text}>
-          Nie możemy teraz ocenić uprawnień ani policzyć kwot. Lokalny plan i nawigacja
-          działają — bez przykładowych kwot zamiast wyniku.
+          Nie możemy teraz ocenić uprawnień ani policzyć kwot. Plan i nawigacja działają —
+          bez przykładowych kwot zamiast wyniku.
         </Text>
         <Button
           label="Spróbuj ponownie"

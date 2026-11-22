@@ -67,7 +67,7 @@ export const UNVERIFIED_AMOUNT_NOTE =
   'Silnik zgłasza możliwy problem w wyliczeniu stawek. Poniższa kwota jest oznaczona jako wstępna — nie traktuj jej jako ostatecznego wyliczenia ZUS.';
 
 export const LEGAL_DISCLAIMER_SHORT =
-  'eBobo jest projektem demonstracyjnym przygotowanym na Hackathon 2026. Nie jest oficjalną aplikacją Zakładu Ubezpieczeń Społecznych. Przedstawione informacje i wyliczenia mają charakter informacyjny i nie stanowią decyzji o przyznaniu świadczeń.';
+  'Informacje i wyliczenia w eBobo mają charakter pomocniczy. Nie są oficjalną decyzją ZUS o przyznaniu świadczenia.';
 
 export const LEGAL_DISCLAIMER_CALC =
   'Szacunek z silnika przy Twoich założeniach. To nie jest decyzja ZUS ani potwierdzenie prawa do świadczenia.';

@@ -62,7 +62,7 @@ export function CompleteDataScreen() {
         queryKey: catalogEligibilityQueryKey(nextProfile),
         queryFn: () => eligibilityService.evaluate(nextProfile),
       });
-      router.replace('/home');
+      router.replace('/benefits');
     } catch (e) {
       setSaveError(
         apiErrorMessage(e, 'Zapisano dane, ale ponowna ocena się nie powiodła.'),
@@ -78,7 +78,7 @@ export function CompleteDataScreen() {
       subtitle="Dokładniejsza ocena uprawnień"
       backFallbackHref="/home"
     >
-      <DemoBanner message="Komunikaty „brakuje…” pochodzą z silnika jako tekst — nie zgadujemy automatycznie pól formularza." />
+      <DemoBanner message="Uzupełnij tylko to, czego potrzebujemy do oceny. Nie zgadujemy pól automatycznie." />
 
       <Card>
         <Text style={styles.title}>Możemy dokładniej sprawdzić Twoje uprawnienia</Text>

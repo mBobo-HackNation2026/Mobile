@@ -76,7 +76,7 @@ export function mapEligibilityCheckToBenefit(
       : null,
     sourceUrls: ['https://www.zus.pl'],
     legalBasisNote: [
-      `FastAPI eligibility/check/${result.benefit_code} · rules_version ${result.rules_version}`,
+      `Ocena uprawnień · wersja reguł ${result.rules_version}`,
       `Źródło danych: ${result.data_source}`,
       ...(result.plan?.legal_basis ?? []),
     ]
@@ -113,10 +113,10 @@ function buildSummary(
   cautious: boolean,
 ): string {
   if (cautious) {
-    return 'Wstępna ocena API — sprawdź ostrzeżenia i potwierdź warunki w ZUS.';
+    return 'Wstępna ocena — sprawdź ostrzeżenia i potwierdź warunki w ZUS.';
   }
   if (status === 'insufficient_data' && result.missing_data.length) {
-    return `Brakuje: ${result.missing_data.join(', ')}.`;
+    return `Potrzebujemy jeszcze: ${result.missing_data.join(', ')}.`;
   }
   if (status === 'obstacle_with_options' && result.unmet_conditions.length) {
     return result.unmet_conditions[0] ?? 'Jest przeszkoda — sprawdź możliwe rozwiązania.';
@@ -124,8 +124,8 @@ function buildSummary(
   if (status === 'likely_eligible' && result.plan) {
     const rate = formatPlanRate(result.plan);
     return rate
-      ? `Na podstawie API: ${formatPlanDuration(result.plan)} · ${rate}.`
-      : `Na podstawie API: ${formatPlanDuration(result.plan)}.`;
+      ? `Szacunek: ${formatPlanDuration(result.plan)} · ${rate}.`
+      : `Szacunek: ${formatPlanDuration(result.plan)}.`;
   }
   if (result.unmet_conditions[0]) return result.unmet_conditions[0];
   return result.benefit_name;
@@ -133,7 +133,7 @@ function buildSummary(
 
 function buildRationale(result: EligibilityCheckResult, cautious: boolean): string {
   const parts = [
-    `Wynik pochodzi z FastAPI /api/v1/eligibility/check/${result.benefit_code} — to nie jest decyzja ZUS.`,
+    'Wynik oceny jest informacyjny — to nie jest decyzja ZUS.',
   ];
   if (cautious) {
     parts.push(
@@ -147,10 +147,10 @@ function buildRationale(result: EligibilityCheckResult, cautious: boolean): stri
     parts.push(`Niespełnione: ${result.unmet_conditions.join('; ')}.`);
   }
   if (result.missing_data.length) {
-    parts.push(`Brakuje danych: ${result.missing_data.join('; ')}.`);
+    parts.push(`Potrzebujemy jeszcze: ${result.missing_data.join('; ')}.`);
   }
   if (result.warnings.length) {
-    parts.push(`Ostrzeżenia API: ${result.warnings.join(' ')}`);
+    parts.push(`Ostrzeżenia: ${result.warnings.join(' ')}`);
   }
   return parts.join(' ');
 }
@@ -160,13 +160,13 @@ function buildConditions(result: EligibilityCheckResult): BenefitCondition[] {
     id: `api-met-${i}`,
     label,
     state: 'met',
-    explanation: 'Warunek oznaczony jako spełniony przez silnik FastAPI.',
+    explanation: 'Warunek oznaczony jako spełniony w wyniku oceny.',
   }));
   const unmet: BenefitCondition[] = result.unmet_conditions.map((label, i) => ({
     id: `api-unmet-${i}`,
     label,
     state: 'unmet',
-    explanation: 'Warunek oznaczony jako niespełniony przez silnik FastAPI.',
+    explanation: 'Warunek oznaczony jako niespełniony w wyniku oceny.',
   }));
   const missing: BenefitCondition[] = result.missing_data.map((label, i) => ({
     id: `api-missing-${i}`,
@@ -193,7 +193,7 @@ function mapSolutionToRemedy(
     kind,
     affects: 'unknown',
     limitations: [
-      'Działanie pochodzi z FastAPI — nie jest gwarancją świadczenia.',
+      'Działanie pochodzi z oceny uprawnień — nie jest gwarancją świadczenia.',
       ...(solution.legal_basis ? [`Podstawa: ${solution.legal_basis}`] : []),
       ...(related ? [`Powiązany kod: ${related}`] : []),
     ],

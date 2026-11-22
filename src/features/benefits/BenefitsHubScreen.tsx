@@ -1,14 +1,19 @@
 import { Link, router, type Href } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { FileCheck, ChevronDown, ChevronUp } from 'lucide-react-native';
 
 import { ApiHealthBanner } from '@/components/ui/ApiHealthBanner';
-import { AppSection } from '@/components/ui/AppSection';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { DemoBanner } from '@/components/ui/DemoBanner';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { InstitutionMark } from '@/components/ui/InstitutionMark';
 import { LegalDisclaimer } from '@/components/ui/LegalDisclaimer';
 import { QuickActionRow } from '@/components/ui/QuickActionRow';
 import { Screen } from '@/components/ui/Screen';
@@ -17,30 +22,50 @@ import {
   BENEFIT_TONE,
   shouldOpenAssessmentReview,
 } from '@/features/benefits/benefitUi';
-import { resolveBenefitInstitution } from '@/features/benefits/resolveBenefitInstitution';
+import {
+  countEligibilityBuckets,
+  ELIGIBILITY_COUNT_LABEL,
+} from '@/features/plan/eligibilityDashboard';
 import { useCatalogEligibility } from '@/hooks/useCatalogEligibility';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import { getApiMode } from '@/services/api';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 import {
-  BENEFIT_GROUP_ORDER,
-  BENEFIT_GROUP_TITLE,
   BENEFIT_STATUS_LABEL,
   type BenefitAssessment,
   type BenefitPresentationStatus,
 } from '@/types/benefits';
 
+const PRIMARY_STATUSES: BenefitPresentationStatus[] = [
+  'likely_eligible',
+  'obstacle_with_options',
+  'insufficient_data',
+  'needs_review',
+];
+
+const REMAINING_STATUSES: BenefitPresentationStatus[] = ['not_eligible'];
+
 export function BenefitsHubScreen() {
   const mode = getApiMode();
   const { profile, evaluation, isLoading, isError, error, refetch } =
     useCatalogEligibility();
+  const [remainingOpen, setRemainingOpen] = useState(false);
+
+  const grouped = useMemo(
+    () => (evaluation ? groupBenefits(evaluation.benefits) : null),
+    [evaluation],
+  );
+  const counts = useMemo(
+    () => countEligibilityBuckets(evaluation?.benefits ?? []),
+    [evaluation],
+  );
 
   if (!profile.onboardingCompleted) {
     return (
       <Screen>
         <EmptyState
           title="Najpierw poznajmy Twoją sytuację"
-          description="Krótka ankieta lub profil demo — potem pokażemy, jakie świadczenia możesz mieć i co zrobić dalej."
+          description="Krótka ankieta wystarczy, żeby sprawdzić, jakie świadczenia mogą Cię dotyczyć."
           actionLabel="Rozpocznij"
           onAction={() => router.push('/onboarding')}
         />
@@ -48,12 +73,16 @@ export function BenefitsHubScreen() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading && !evaluation) {
     return (
-      <Screen title="Moje świadczenia">
+      <Screen title="Twoje świadczenia" back={false}>
         <ApiHealthBanner />
-        <Card>
-          <Text style={styles.muted}>Analizujemy potencjalne uprawnienia…</Text>
+        <Card style={styles.loadingCard}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={styles.loadingTitle}>Sprawdzamy Twoje możliwości</Text>
+          <Text style={styles.muted}>
+            Analizujemy świadczenia na podstawie podanych informacji…
+          </Text>
         </Card>
       </Screen>
     );
@@ -61,15 +90,15 @@ export function BenefitsHubScreen() {
 
   if (isError || !evaluation) {
     return (
-      <Screen title="Moje świadczenia">
+      <Screen title="Twoje świadczenia" back={false}>
         <ApiHealthBanner />
         <EmptyState
-          title="Nie udało się ocenić świadczeń"
+          title="Nie udało się sprawdzić świadczeń"
           description={apiErrorMessage(
             error,
             mode === 'rest'
-              ? 'Silnik nie odpowiedział. To nie oznacza braku uprawnienia — spróbuj ponownie.'
-              : 'Spróbuj ponownie — tryb demonstracyjny powinien działać offline.',
+              ? 'Ocena jest chwilowo niedostępna. To nie oznacza braku uprawnienia — spróbuj ponownie.'
+              : 'Spróbuj ponownie za chwilę.',
           )}
           actionLabel="Spróbuj ponownie"
           onAction={() => refetch()}
@@ -79,121 +108,235 @@ export function BenefitsHubScreen() {
     );
   }
 
-  const grouped = groupBenefits(evaluation.benefits);
+  if (!evaluation || !grouped) return null;
+
+  const primaryItems = PRIMARY_STATUSES.flatMap((s) => grouped[s]);
+  const remainingItems = REMAINING_STATUSES.flatMap((s) => grouped[s]);
+  const showUnchecked = counts.unchecked > 0;
 
   return (
-    <Screen
-      title="Moje świadczenia"
-      subtitle="Co może Ci przysługiwać i co zrobić dalej."
-    >
+    <Screen title="Twoje świadczenia" back={false}>
       <ApiHealthBanner />
-      <DemoBanner
-        message={
-          mode === 'rest'
-            ? 'Ocena informacyjna — nie decyzja ZUS.'
-            : 'Ocena demonstracyjna — nie decyzja ZUS.'
-        }
-      />
+
+      <View style={styles.hero}>
+        <Text style={styles.heroLead}>
+          Sprawdziliśmy możliwości na podstawie podanych przez Ciebie informacji.
+        </Text>
+      </View>
+
+      <View style={styles.summaryRow}>
+        <SummaryChip
+          label="Może przysługiwać"
+          accessibilityLabel={ELIGIBILITY_COUNT_LABEL.likely}
+          value={counts.likely}
+          tone="likely"
+        />
+        <SummaryChip
+          label="Wymaga informacji"
+          accessibilityLabel={ELIGIBILITY_COUNT_LABEL.needs_info}
+          value={counts.needs_info}
+          tone="info"
+        />
+        <SummaryChip
+          label="Niespełnione"
+          accessibilityLabel={ELIGIBILITY_COUNT_LABEL.not_eligible}
+          value={counts.not_eligible}
+          tone="muted"
+        />
+        {showUnchecked ? (
+          <SummaryChip
+            label="Nie sprawdzono"
+            accessibilityLabel={ELIGIBILITY_COUNT_LABEL.unchecked}
+            value={counts.unchecked}
+            tone="error"
+          />
+        ) : null}
+      </View>
 
       {evaluation.missingInputs.length > 0 ? (
         <Card style={styles.missingCard}>
-          <Badge label="Uzupełnij dane" tone="primary" />
-          <Text style={styles.cardTitle}>Potrzebujemy jeszcze informacji</Text>
+          <Badge label="Potrzebujemy informacji" tone="primary" />
+          <Text style={styles.cardTitle}>Uzupełnij dane, żeby dokończyć ocenę</Text>
           <Text style={styles.body} numberOfLines={2}>
             Brakuje: {evaluation.missingInputs.join(', ')}.
           </Text>
           <Button
-            label="Uzupełnij dane"
+            label="Uzupełnij informacje"
             onPress={() => router.push('/complete-data')}
           />
         </Card>
       ) : null}
 
-      {BENEFIT_GROUP_ORDER.map((status) => {
-        const items = grouped[status];
-        if (!items.length) return null;
-        return (
-          <AppSection
-            key={status}
-            title={BENEFIT_GROUP_TITLE[status]}
-            subtitle={
-              status === 'needs_review'
-                ? 'Wymaga potwierdzenia w ZUS lub u płatnika.'
-                : undefined
-            }
+      {primaryItems.length > 0 ? (
+        <View style={styles.section}>
+          {counts.likely > 0 ? (
+            <Text style={styles.sectionTitle}>Może Ci przysługiwać</Text>
+          ) : (
+            <Text style={styles.sectionTitle}>Do sprawdzenia</Text>
+          )}
+          {grouped.likely_eligible.map((benefit) => (
+            <BenefitCard key={benefit.id} benefit={benefit} priority />
+          ))}
+          {[
+            ...grouped.obstacle_with_options,
+            ...grouped.insufficient_data,
+            ...grouped.needs_review,
+          ].map((benefit) => (
+            <BenefitCard key={benefit.id} benefit={benefit} />
+          ))}
+        </View>
+      ) : null}
+
+      {remainingItems.length > 0 ? (
+        <View style={styles.section}>
+          <Pressable
+            onPress={() => setRemainingOpen((v) => !v)}
+            style={({ pressed }) => [
+              styles.remainingToggle,
+              pressed && styles.remainingTogglePressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: remainingOpen }}
+            accessibilityLabel="Pozostałe świadczenia"
           >
-            {items.map((benefit) => (
-              <BenefitCard key={benefit.id} benefit={benefit} />
-            ))}
-          </AppSection>
-        );
-      })}
+            <View style={styles.remainingToggleText}>
+              <Text style={styles.sectionTitle}>Pozostałe świadczenia</Text>
+              <Text style={styles.remainingHint}>
+                {remainingItems.length}{' '}
+                {remainingItems.length === 1 ? 'pozycja' : 'pozycje'} · warunki obecnie
+                niespełnione
+              </Text>
+            </View>
+            {remainingOpen ? (
+              <ChevronUp size={20} color={colors.textMuted} />
+            ) : (
+              <ChevronDown size={20} color={colors.textMuted} />
+            )}
+          </Pressable>
+          {remainingOpen
+            ? remainingItems.map((benefit) => (
+                <BenefitCard key={benefit.id} benefit={benefit} subdued />
+              ))
+            : null}
+        </View>
+      ) : null}
+
+      {primaryItems.length === 0 && remainingItems.length === 0 ? (
+        <EmptyState
+          title="Brak wyników oceny"
+          description="Ponów analizę albo uzupełnij dane w profilu."
+          actionLabel="Spróbuj ponownie"
+          onAction={() => refetch()}
+        />
+      ) : null}
 
       <QuickActionRow
         actions={[
+          { label: 'Mój plan', href: '/home', hint: 'Co teraz?' },
           { label: 'Kalkulator', href: '/calculator', hint: 'Ile dostanę?' },
           { label: 'Sprawy', href: '/sprawy', hint: 'Formalności' },
-          { label: 'Inne (800+)', href: '/other-benefits', hint: 'Informacyjnie' },
         ]}
       />
 
-      {evaluation.ruleSetVersion ? (
-        <Text style={styles.meta}>Wersja reguł: {evaluation.ruleSetVersion}</Text>
-      ) : null}
       <LegalDisclaimer />
     </Screen>
   );
 }
 
-function BenefitCard({ benefit }: { benefit: BenefitAssessment }) {
-  const institutionId = resolveBenefitInstitution(benefit);
-  const needsReview = benefit.status === 'needs_review';
+function SummaryChip({
+  label,
+  value,
+  tone,
+  accessibilityLabel,
+}: {
+  label: string;
+  value: number;
+  tone: 'likely' | 'info' | 'muted' | 'error';
+  accessibilityLabel?: string;
+}) {
+  return (
+    <View
+      style={[styles.chip, toneStyles[tone]]}
+      accessibilityLabel={`${accessibilityLabel ?? label}: ${value}`}
+    >
+      <Text style={[styles.chipValue, toneValueStyles[tone]]}>{value}</Text>
+      <Text style={styles.chipLabel} numberOfLines={2}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function BenefitCard({
+  benefit,
+  priority = false,
+  subdued = false,
+}: {
+  benefit: BenefitAssessment;
+  priority?: boolean;
+  subdued?: boolean;
+}) {
   const openReview = shouldOpenAssessmentReview(benefit.status);
   const reviewHref = assessmentReviewHref(benefit.id);
+  const detailHref = (openReview ? reviewHref : `/benefits/${benefit.id}`) as Href;
+  const needsInfo =
+    benefit.status === 'insufficient_data' ||
+    benefit.status === 'needs_review' ||
+    benefit.status === 'obstacle_with_options';
+  const completeData =
+    needsInfo && benefit.nextStepHref.includes('complete-data');
+  const primaryLabel = completeData
+    ? 'Uzupełnij informacje'
+    : 'Zobacz szczegóły';
+
+  const primaryHref = (completeData ? benefit.nextStepHref : detailHref) as Href;
 
   return (
-    <Card style={needsReview ? styles.reviewCard : undefined}>
+    <Card
+      style={{
+        ...styles.benefitCard,
+        ...(priority ? styles.benefitCardPriority : null),
+        ...(subdued ? styles.benefitCardSubdued : null),
+      }}
+    >
       <View style={styles.cardTop}>
+        <View style={styles.iconBadge}>
+          <FileCheck
+            size={18}
+            color={priority ? colors.primary : colors.textMuted}
+            strokeWidth={2.2}
+          />
+        </View>
         <Badge
           label={BENEFIT_STATUS_LABEL[benefit.status]}
           tone={BENEFIT_TONE[benefit.status]}
         />
-        {institutionId ? <InstitutionMark institutionId={institutionId} /> : null}
       </View>
       <Text style={styles.cardTitle}>{benefit.title}</Text>
       <Text style={styles.body} numberOfLines={2}>
         {benefit.headline}
       </Text>
-      {openReview ? (
-        <Button
-          label="Sprawdź szczegóły"
-          onPress={() => router.push(reviewHref as Href)}
-          fullWidth
-        />
-      ) : (
-        <Button
-          label={benefit.nextStepLabel}
-          onPress={() => router.push(benefit.nextStepHref as Href)}
-          fullWidth
-        />
-      )}
-      <Link href={(openReview ? reviewHref : `/benefits/${benefit.id}`) as Href}>
-        <Text style={styles.link}>
-          {openReview ? 'Szczegóły oceny →' : 'Szczegóły →'}
-        </Text>
+      <Button
+        label={primaryLabel}
+        onPress={() => router.push(primaryHref)}
+        fullWidth
+        variant={priority ? 'primary' : needsInfo ? 'primary' : 'secondary'}
+      />
+      <Link href={detailHref}>
+        <Text style={styles.link}>Szczegóły →</Text>
       </Link>
     </Card>
   );
 }
 
 function groupBenefits(benefits: BenefitAssessment[]) {
-  const map = BENEFIT_GROUP_ORDER.reduce(
-    (acc, status) => {
-      acc[status] = [];
-      return acc;
-    },
-    {} as Record<BenefitPresentationStatus, BenefitAssessment[]>,
-  );
+  const map = {
+    likely_eligible: [] as BenefitAssessment[],
+    obstacle_with_options: [] as BenefitAssessment[],
+    insufficient_data: [] as BenefitAssessment[],
+    needs_review: [] as BenefitAssessment[],
+    not_eligible: [] as BenefitAssessment[],
+  };
 
   for (const benefit of benefits) {
     map[benefit.status].push(benefit);
@@ -201,36 +344,146 @@ function groupBenefits(benefits: BenefitAssessment[]) {
   return map;
 }
 
+const toneStyles = StyleSheet.create({
+  likely: {
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accent,
+  },
+  info: {
+    backgroundColor: colors.warningSoft,
+    borderColor: colors.warning,
+  },
+  muted: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+  },
+  error: {
+    backgroundColor: colors.dangerSoft,
+    borderColor: colors.danger,
+  },
+});
+
+const toneValueStyles = StyleSheet.create({
+  likely: { color: colors.accent },
+  info: { color: colors.warning },
+  muted: { color: colors.textSecondary },
+  error: { color: colors.danger },
+});
+
 const styles = StyleSheet.create({
+  hero: {
+    gap: spacing.xxs,
+    marginBottom: spacing.xs,
+  },
+  heroLead: {
+    ...typography.body,
+    color: colors.textSecondary,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  chip: {
+    flexGrow: 1,
+    flexBasis: '30%',
+    minWidth: 96,
+    maxWidth: '48%',
+    borderWidth: 1,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    gap: 2,
+  },
+  chipValue: {
+    ...typography.h3,
+    fontSize: 20,
+    lineHeight: 24,
+  },
+  chipLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  section: {
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  remainingToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    minHeight: 44,
+  },
+  remainingTogglePressed: {
+    opacity: 0.75,
+  },
+  remainingToggleText: {
+    flex: 1,
+    gap: 2,
+  },
+  remainingHint: {
+    ...typography.small,
+    color: colors.textMuted,
+  },
+  benefitCard: {
+    gap: spacing.xs,
+  },
+  benefitCardPriority: {
+    borderColor: colors.primaryMuted,
+    backgroundColor: colors.surface,
+  },
+  benefitCardSubdued: {
+    opacity: 0.92,
+    backgroundColor: colors.surfaceMuted,
+  },
   cardTop: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  cardTitle: { ...typography.h3, color: colors.text, marginTop: spacing.sm },
+  iconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+  },
+  cardTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginTop: spacing.xs,
+  },
   body: {
     ...typography.body,
     color: colors.textSecondary,
-    marginVertical: spacing.sm,
+    marginBottom: spacing.xs,
   },
-  meta: { ...typography.small, color: colors.textMuted, marginBottom: spacing.sm },
-  next: {
+  link: {
     ...typography.bodyStrong,
+    color: colors.primary,
+    marginTop: spacing.xs,
+    minHeight: 44,
+    paddingTop: spacing.xs,
+  },
+  muted: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+  loadingCard: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xl,
+  },
+  loadingTitle: {
+    ...typography.h3,
     color: colors.text,
-    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
-  link: { ...typography.bodyStrong, color: colors.primary, marginTop: spacing.sm },
-  muted: { ...typography.body, color: colors.textSecondary },
   missingCard: { gap: spacing.xs },
-  asideCard: { gap: spacing.sm },
-  reviewCard: {
-    borderColor: colors.warning,
-    backgroundColor: colors.warningSoft,
-  },
-  reviewHint: {
-    ...typography.small,
-    color: colors.warning,
-    marginBottom: spacing.sm,
-  },
 });

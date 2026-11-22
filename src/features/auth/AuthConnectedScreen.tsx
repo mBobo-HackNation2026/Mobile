@@ -12,7 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
+import { resolvePostEntryHref } from '@/lib/appHome';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, radii, spacing, typography } from '@/theme';
 
 /**
@@ -23,11 +25,15 @@ export function AuthConnectedScreen() {
   const profile = useAuthStore((s) => s.profile);
   const status = useAuthStore((s) => s.status);
   const userId = useAuthStore((s) => s.userId);
+  const onboardingCompleted = useUserJourneyStore(
+    (s) => s.profile.onboardingCompleted,
+  );
   const displayName =
-    [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || 'Profil DEMO';
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') ||
+    'Profil demonstracyjny';
 
   const continueNext = () => {
-    router.replace('/home');
+    router.replace(resolvePostEntryHref(onboardingCompleted));
   };
 
   return (

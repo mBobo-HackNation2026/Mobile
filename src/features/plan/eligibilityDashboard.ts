@@ -94,9 +94,9 @@ export function pickDashboardFocus(
     return {
       title: 'Nie udało się sprawdzić uprawnień',
       summary:
-        'Brak połączenia z silnikiem nie oznacza odmowy. Spróbuj ponownie — lokalny plan DEMO nie zastępuje oceny.',
+        'Brak połączenia z oceną nie oznacza odmowy. Spróbuj ponownie — lokalne wskazówki nie zastępują wyniku.',
       ctaLabel: 'Spróbuj ponownie',
-      ctaHref: '/home',
+      ctaHref: '/benefits',
       source: 'retry',
     };
   }

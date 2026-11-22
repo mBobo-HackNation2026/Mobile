@@ -16,12 +16,15 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useAdaptiveLayout } from '@/hooks/useAdaptiveLayout';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
+import { resolvePostEntryHref } from '@/lib/appHome';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, radii, spacing, typography } from '@/theme';
 
 function continueAfterAuth() {
-  router.replace('/home');
+  const onboardingCompleted =
+    useUserJourneyStore.getState().profile.onboardingCompleted;
+  router.replace(resolvePostEntryHref(onboardingCompleted));
 }
 
 /**

@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { mainNavItems, secondaryNavItems } from '@/components/layout/navItems';
-import { Badge } from '@/components/ui/Badge';
 import { colors, layout, radii, spacing, typography } from '@/theme';
 
 interface SidebarProps {
@@ -29,8 +28,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
         {!collapsed ? (
           <>
             <Text style={styles.brandTitle}>eBobo</Text>
-            <Text style={styles.brandTagline}>Mój plan rodzica</Text>
-            <Badge label="Demo" tone="demo" />
+            <Text style={styles.brandTagline}>Przewodnik świadczeń</Text>
           </>
         ) : (
           <View style={styles.brandMarkWrap}>

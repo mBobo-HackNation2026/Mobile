@@ -1,9 +1,9 @@
 import type { LucideIcon } from 'lucide-react-native';
 import {
   Calculator,
-  ClipboardList,
+  CalendarDays,
+  FileCheck,
   ListChecks,
-  ShieldCheck,
   UserRound,
 } from 'lucide-react-native';
 
@@ -14,14 +14,13 @@ export interface NavItem {
 }
 
 /**
- * Etap 9 — role modułów (brief UX):
- * Plan = co teraz · Sprawy = checklista · Świadczenia · Kalkulator · Profil
+ * Etap 14 — Plan · Sprawy · Świadczenia (domyślne) · Kalkulator · Profil
  * Kalendarz / mapa / demo pozostają w menu skrótów.
  */
 export const mainNavItems: NavItem[] = [
-  { href: '/home', label: 'Plan', icon: ClipboardList },
+  { href: '/home', label: 'Plan', icon: CalendarDays },
   { href: '/sprawy', label: 'Sprawy', icon: ListChecks },
-  { href: '/benefits', label: 'Świadczenia', icon: ShieldCheck },
+  { href: '/benefits', label: 'Świadczenia', icon: FileCheck },
   { href: '/calculator', label: 'Kalkulator', icon: Calculator },
   { href: '/profile', label: 'Profil', icon: UserRound },
 ];

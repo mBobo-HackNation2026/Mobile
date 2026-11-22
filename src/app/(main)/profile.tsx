@@ -81,16 +81,15 @@ export default function ProfileScreen() {
       </Card>
 
       <View style={styles.actions}>
-        <Button label="Mój plan" onPress={() => router.push('/home')} />
-        <Button label="Mapa pomocy" variant="secondary" onPress={() => router.push('/map')} />
-        <Button label="Ponów ocenę świadczeń" variant="secondary" onPress={() => router.push('/benefits')} />
+        <Button label="Twoje świadczenia" onPress={() => router.push('/benefits')} />
+        <Button label="Uzupełnij dane" variant="secondary" onPress={() => router.push('/complete-data')} />
+        <Button label="Mój plan" variant="secondary" onPress={() => router.push('/home')} />
         <Button label="Edytuj ankietę" variant="secondary" onPress={() => router.push('/onboarding')} />
         <Button label="Dane ZUS (symulacja)" variant="secondary" onPress={() => router.push('/zus')} />
-        <Button label="Scenariusze demo" variant="secondary" onPress={() => router.push('/demo')} />
-        <Button label="Kalendarz" variant="secondary" onPress={() => router.push('/calendar')} />
+        <Button label="Przykładowe profile" variant="secondary" onPress={() => router.push('/demo')} />
         <Button label="Menu skrótów" variant="ghost" onPress={() => router.push('/home-menu')} />
         <Button
-          label="Restart demo"
+          label="Wyczyść dane lokalne"
           variant="danger"
           onPress={() => {
             resetDemo();

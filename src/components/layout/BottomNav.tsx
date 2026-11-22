@@ -17,29 +17,54 @@ export function BottomNav() {
       ]}
       pointerEvents="box-none"
     >
-      <View style={styles.bar}>
+      <View style={styles.bar} accessibilityRole="tablist">
         {mainNavItems.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
+          const isBenefits = item.href === '/benefits';
+
           return (
             <Link
               key={item.href}
               href={item.href}
               style={styles.item}
+              accessibilityRole="tab"
               accessibilityLabel={item.label}
               accessibilityState={{ selected: active }}
             >
-              <View style={[styles.itemInner, active && styles.itemInnerActive]}>
-                <View style={[styles.iconWrap, active && styles.iconWrapActive]}>
+              <View
+                style={[
+                  styles.itemInner,
+                  active && styles.itemInnerActive,
+                  active && isBenefits && styles.itemInnerBenefits,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.iconWrap,
+                    active && styles.iconWrapActive,
+                    active && isBenefits && styles.iconWrapBenefits,
+                  ]}
+                >
                   <Icon
                     size={20}
-                    color={active ? colors.primary : colors.textMuted}
+                    color={
+                      active
+                        ? isBenefits
+                          ? colors.textInverse
+                          : colors.primary
+                        : colors.textMuted
+                    }
                     strokeWidth={active ? 2.4 : 2}
                   />
                 </View>
                 <Text
-                  style={[styles.label, active && styles.labelActive]}
+                  style={[
+                    styles.label,
+                    active && styles.labelActive,
+                    active && isBenefits && styles.labelBenefits,
+                  ]}
                   numberOfLines={1}
                 >
                   {item.label}
@@ -58,10 +83,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xs,
     backgroundColor: colors.background,
+    alignItems: 'center',
   },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
+    maxWidth: 520,
     backgroundColor: colors.surface,
     borderRadius: radii.xl,
     borderWidth: 1,
@@ -71,18 +99,18 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 1,
-        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 20,
       },
       android: {
-        elevation: 6,
+        elevation: 8,
       },
       default: {
         shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 1,
-        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 20,
       },
     }),
   },
@@ -99,9 +127,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxs,
     paddingHorizontal: spacing.xs,
     borderRadius: radii.lg,
-    minWidth: 64,
+    minWidth: 56,
+    minHeight: 48,
   },
   itemInnerActive: {
+    backgroundColor: colors.primarySoft,
+  },
+  itemInnerBenefits: {
     backgroundColor: colors.primarySoft,
   },
   iconWrap: {
@@ -114,6 +146,9 @@ const styles = StyleSheet.create({
   iconWrapActive: {
     backgroundColor: colors.surface,
   },
+  iconWrapBenefits: {
+    backgroundColor: colors.primary,
+  },
   label: {
     ...typography.caption,
     color: colors.textMuted,
@@ -123,5 +158,8 @@ const styles = StyleSheet.create({
   labelActive: {
     color: colors.primaryHover,
     fontWeight: '700',
+  },
+  labelBenefits: {
+    color: colors.primaryHover,
   },
 });

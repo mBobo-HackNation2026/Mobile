@@ -7,7 +7,7 @@ interface DemoBannerProps {
 }
 
 export function DemoBanner({
-  message = 'Tryb demonstracyjny — dane przykładowe, bez połączenia z ZUS.',
+  message = 'Dane przykładowe — bez połączenia z kontem ZUS.',
 }: DemoBannerProps) {
   return (
     <View style={styles.banner} accessibilityLabel={message}>

@@ -9,7 +9,7 @@ const COPY: Record<Variant, string> = {
   default: LEGAL_DISCLAIMER_SHORT,
   compact: LEGAL_DISCLAIMER_SHORT,
   verification:
-    'Ten wynik wymaga indywidualnej weryfikacji. eBobo jest projektem demonstracyjnym Hackathon 2026 — nie oficjalną aplikacją ZUS. Informacje nie stanowią decyzji o przyznaniu świadczenia.',
+    'Ten wynik wymaga indywidualnej weryfikacji. Informacje w eBobo nie stanowią decyzji ZUS o przyznaniu świadczenia.',
 };
 
 /** Dyskretny disclaimer prawny — bez modalu. */

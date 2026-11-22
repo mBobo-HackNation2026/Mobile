@@ -104,7 +104,7 @@ export default function WelcomeScreen() {
               <View style={styles.stageBlock}>
                 <Text style={styles.stageTitle}>Wybierz swoją sytuację</Text>
                 <Text style={styles.stageLead}>
-                  Dalej: krótka ankieta, potem plan, świadczenia i kalkulator.
+                  Dalej: krótka ankieta, potem Twoje świadczenia i kolejne kroki.
                 </Text>
                 <View style={[styles.stageGrid, !isCompact && styles.stageGridWide]}>
                   {START_OPTIONS.map((option) => (
@@ -131,9 +131,9 @@ export default function WelcomeScreen() {
                 />
                 {onboardingCompleted ? (
                   <Button
-                    label="Przejdź do Mój plan"
+                    label="Przejdź do świadczeń"
                     variant="secondary"
-                    onPress={() => router.push('/home')}
+                    onPress={() => router.push('/benefits')}
                     fullWidth={isCompact}
                   />
                 ) : (

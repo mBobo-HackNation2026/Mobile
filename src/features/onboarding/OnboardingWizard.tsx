@@ -170,7 +170,7 @@ export function OnboardingWizard() {
     });
     const nextProfile = useUserJourneyStore.getState().profile;
     void prefetchCatalogEligibility(queryClient, nextProfile);
-    router.push('/home');
+    router.push('/benefits');
   };
 
   const goBack = () => {
@@ -205,7 +205,7 @@ export function OnboardingWizard() {
       edges={['left', 'right', 'bottom']}
       keyboardOffset={Platform.OS === 'ios' ? 64 : 0}
     >
-      <DemoBanner message="Ankieta jest lokalna — nic nie wysyłamy do ZUS. To nie jest wniosek urzędowy." />
+      <DemoBanner message="Ankieta zostaje u Ciebie — nic nie wysyłamy do ZUS. To nie jest wniosek urzędowy." />
       <View style={styles.header}>
         <Badge label={`Krok ${step + 1} z ${total}`} tone="primary" />
         <Text style={styles.title}>
@@ -555,7 +555,7 @@ export function OnboardingWizard() {
               }
             />
             <Text style={styles.blockHint}>
-              Wynik będzie symulacją demonstracyjną — nie decyzją ZUS.
+              Wynik będzie oceną informacyjną — nie decyzją ZUS.
             </Text>
           </View>
         ) : null}
