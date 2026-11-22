@@ -104,7 +104,7 @@ export default function WelcomeScreen() {
               <View style={styles.stageBlock}>
                 <Text style={styles.stageTitle}>Wybierz swoją sytuację</Text>
                 <Text style={styles.stageLead}>
-                  Potem przejdziesz: ankieta → Mój plan → świadczenia → kalkulator.
+                  Dalej: krótka ankieta, potem plan, świadczenia i kalkulator.
                 </Text>
                 <View style={[styles.stageGrid, !isCompact && styles.stageGridWide]}>
                   {START_OPTIONS.map((option) => (
@@ -150,11 +150,8 @@ export default function WelcomeScreen() {
                 <Link href="/">
                   <Text style={styles.footerLink}>← Wróć do logowania</Text>
                 </Link>
-                <Link href="/eligibility">
-                  <Text style={styles.footerLink}>Ocena API — zasiłek macierzyński</Text>
-                </Link>
                 <Text style={styles.footerNote}>
-                  eBobo odpowiada na: co mi przysługuje, ile, kiedy i gdzie to załatwić.
+                  eBobo pomaga ustalić: co Ci przysługuje, ile, kiedy i gdzie to załatwić.
                   Dane demo są zawsze oznaczone.
                 </Text>
               </View>

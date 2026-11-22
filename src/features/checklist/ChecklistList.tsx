@@ -108,7 +108,7 @@ export function ChecklistList({
                 </View>
               </View>
               <View style={styles.collapsedRight}>
-                <Badge label="Wykonane" tone="success" />
+                <Badge label={STATUS_LABEL.done} tone="success" />
                 <ChevronDown size={18} color={colors.textMuted} />
               </View>
             </Pressable>

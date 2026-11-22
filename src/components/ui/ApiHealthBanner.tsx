@@ -42,11 +42,11 @@ export function ApiHealthBanner() {
       <View style={[styles.banner, styles.error]} accessibilityRole="alert">
         <Text style={styles.textStrong}>Silnik świadczeń jest teraz niedostępny</Text>
         <Text style={styles.text}>
-          {query.data?.detail ??
-            'Nie możemy teraz pobrać oceny uprawnień ani wyliczyć kwot. Lokalny plan DEMO i nawigacja działają — bez przykładowych kwot zamiast wyniku.'}
+          Nie możemy teraz ocenić uprawnień ani policzyć kwot. Lokalny plan i nawigacja
+          działają — bez przykładowych kwot zamiast wyniku.
         </Text>
         <Button
-          label="Sprawdź ponownie"
+          label="Spróbuj ponownie"
           variant="secondary"
           onPress={() => void query.refetch()}
         />
@@ -54,14 +54,8 @@ export function ApiHealthBanner() {
     );
   }
 
-  return (
-    <View style={[styles.banner, styles.ok]} accessibilityRole="text">
-      <Text style={styles.text}>
-        Połączenie z silnikiem: OK. Jeśli pojedyncze wyliczenie się nie uda, zobaczysz komunikat
-        przy tej operacji — to coś innego niż brak całego serwisu.
-      </Text>
-    </View>
-  );
+  /** Stan OK — dyskretny, bez zajmującego banneru (Etap 9 UX). */
+  return null;
 }
 
 const styles = StyleSheet.create({

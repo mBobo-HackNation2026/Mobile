@@ -1,16 +1,14 @@
 import { Link, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ApiHealthBanner } from '@/components/ui/ApiHealthBanner';
-import { AppSection } from '@/components/ui/AppSection';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DemoBanner } from '@/components/ui/DemoBanner';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { QuickActionRow } from '@/components/ui/QuickActionRow';
 import { Screen } from '@/components/ui/Screen';
 import { ChecklistList } from '@/features/checklist/ChecklistList';
 import { DeadlineRadarSection } from '@/features/extensions/DeadlineRadarSection';
@@ -28,14 +26,15 @@ import { colors, spacing, typography } from '@/theme';
 import { normalizeChecklistStatus, type ChecklistItem } from '@/types/journey';
 
 /**
- * Moje sprawy — radar i checklista formalności.
- * FastAPI (procedure) + uzupełnienie z lokalnego Mój plan (DEMO).
+ * Moje sprawy — „Co mam do załatwienia?”
+ * Etap 9: checklista na pierwszym planie, radar dopiero po rozwinięciu.
  */
 export default function SprawyScreen() {
   const profile = useUserJourneyStore((s) => s.profile);
   const overrides = useUserJourneyStore((s) => s.checklistOverrides);
   const setChecklistStatus = useUserJourneyStore((s) => s.setChecklistStatus);
   const mode = getApiMode();
+  const [showRadar, setShowRadar] = useState(false);
 
   const query = useQuery({
     queryKey: ['eligibility', profile],
@@ -58,7 +57,7 @@ export default function SprawyScreen() {
       <Screen title="Moje sprawy">
         <EmptyState
           title="Brak spraw"
-          description="Najpierw uzupełnij ankietę — potem zobaczysz formalności i Mój plan."
+          description="Najpierw uzupełnij ankietę — potem zobaczysz listę formalności."
           actionLabel="Mój plan"
           onAction={() => router.push('/home')}
         />
@@ -68,23 +67,17 @@ export default function SprawyScreen() {
 
   if (query.isLoading) {
     return (
-      <Screen title="Moje sprawy" subtitle="Formalności z oceny sytuacji i planu lokalnego.">
+      <Screen title="Moje sprawy" subtitle="Co masz do załatwienia.">
         <ApiHealthBanner />
         <Card>
-          <Text style={styles.muted}>Ładujemy formalności z oceny sytuacji…</Text>
+          <Text style={styles.muted}>Ładujemy formalności…</Text>
         </Card>
-        <AppSection
-          step="C"
-          title="Tymczasem — plan lokalny DEMO"
-          subtitle="Checklista nie znika, gdy silnik jeszcze liczy."
-        >
-          <ChecklistList
-            items={applyOverrides(localChecklist, overrides).slice(0, 5)}
-            onStatusChange={setChecklistStatus}
-            compact
-          />
-          <Button label="Otwórz pełny Mój plan" onPress={() => router.push('/home')} />
-        </AppSection>
+        <Text style={styles.sectionTitle}>Tymczasem — plan lokalny</Text>
+        <ChecklistList
+          items={applyOverrides(localChecklist, overrides).slice(0, 6)}
+          onStatusChange={setChecklistStatus}
+          compact
+        />
       </Screen>
     );
   }
@@ -95,51 +88,79 @@ export default function SprawyScreen() {
     overrides,
   );
 
-  return (
-    <Screen
-      title="Moje sprawy"
-      subtitle="Formalności, terminy i checklista — ze silnika oraz lokalnego planu DEMO."
-    >
-      <ApiHealthBanner />
-      <DemoBanner message="Najpierw formalności z oceny sytuacji, potem podpowiedzi DEMO. Żadne nie są decyzją ZUS." />
+  const todoCount = items.filter((i) => i.status === 'todo').length;
+  const doneCount = items.filter((i) => i.status === 'done').length;
+  const pendingCount = items.filter((i) => i.status === 'pending').length;
 
-      <AppSection step="F" title="Szybkie przejścia">
-        <QuickActionRow
-          actions={[
-            { label: 'Mój plan', href: '/home', hint: 'Oś czasu' },
-            { label: 'Świadczenia', href: '/benefits', hint: 'Ocena' },
-            { label: 'Kalkulator', href: '/calculator', hint: 'Kwoty' },
-          ]}
-        />
-      </AppSection>
+  return (
+    <Screen title="Moje sprawy" subtitle="Lista rzeczy do załatwienia.">
+      <ApiHealthBanner />
+      <DemoBanner message="Pozycje z oceny sytuacji oraz z lokalnego planu. To nie jest decyzja ZUS." />
+
+      <View style={styles.summaryRow}>
+        <SummaryChip label="Do zrobienia" value={todoCount} />
+        <SummaryChip label="W trakcie / inne" value={pendingCount} />
+        <SummaryChip label="Zrobione" value={doneCount} />
+      </View>
 
       {query.isError ? (
         <Card style={styles.errorCard}>
-          <Badge label="Ocena API niedostępna" tone="danger" />
+          <Badge label="Ocena niedostępna" tone="danger" />
           <Text style={styles.body}>
             {apiErrorMessage(
               query.error,
-              'Pokazujemy wyłącznie checklistę z lokalnego planu DEMO. Spróbuj ponowić połączenie.',
+              'Pokazujemy checklistę z lokalnego planu. Spróbuj ponowić połączenie.',
             )}
           </Text>
+          <Button label="Spróbuj ponownie" onPress={() => query.refetch()} />
+        </Card>
+      ) : null}
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Checklista</Text>
+        <Link href="/plan">
+          <Text style={styles.link}>Filtry →</Text>
+        </Link>
+      </View>
+
+      {items.length === 0 ? (
+        <Card>
+          <Text style={styles.body}>
+            Brak pozycji dla tej sytuacji
+            {mode === 'rest' ? ' — silnik nie zwrócił planu formalności.' : '.'}{' '}
+            Sprawdź świadczenia albo uzupełnij ankietę.
+          </Text>
           <Button
-            label="Spróbuj ponownie ocenę API"
-            onPress={() => query.refetch()}
+            label="Moje świadczenia"
+            onPress={() => router.push('/benefits')}
           />
         </Card>
       ) : (
-        <AppSection
-          step="D"
-          title="Terminy i radar"
-          subtitle="Daty kalendarza tylko gdy silnik podał konkretny dzień."
-        >
-          <DeadlineRadarSection items={query.data?.deadlineRadar ?? []} />
-          <PostpartumKitSection kit={query.data?.postpartumKit ?? null} />
+        <ChecklistList items={items} onStatusChange={setChecklistStatus} compact />
+      )}
+
+      <Pressable
+        onPress={() => setShowRadar((v) => !v)}
+        accessibilityRole="button"
+        style={styles.radarToggle}
+      >
+        <Text style={styles.radarToggleText}>
+          {showRadar ? 'Ukryj terminy i radar' : 'Pokaż terminy i radar'}
+        </Text>
+      </Pressable>
+
+      {showRadar ? (
+        <View style={styles.radarBlock}>
+          {!query.isError ? (
+            <>
+              <DeadlineRadarSection items={query.data?.deadlineRadar ?? []} />
+              <PostpartumKitSection kit={query.data?.postpartumKit ?? null} />
+            </>
+          ) : null}
           <Card style={styles.deadlineCard}>
             <Text style={styles.cardHeading}>Najbliższy termin</Text>
             {query.data?.upcomingDeadline ? (
               <>
-                <Badge label="Z oceny silnika" tone="primary" />
                 <Text style={styles.bodyStrong}>
                   {query.data.upcomingDeadline.title}
                 </Text>
@@ -149,10 +170,7 @@ export default function SprawyScreen() {
               </>
             ) : localPlan.nextDeadline ? (
               <>
-                <Badge label="Orientacyjnie · plan DEMO" tone="demo" />
-                <Text style={styles.body}>
-                  Brak daty ISO w planie API. Pokazujemy termin z lokalnego planu.
-                </Text>
+                <Badge label="Z planu lokalnego" tone="demo" />
                 <Text style={styles.bodyStrong}>{localPlan.nextDeadline.title}</Text>
                 <Text style={styles.deadlineDate}>
                   {formatDatePl(localPlan.nextDeadline.date)}
@@ -167,59 +185,23 @@ export default function SprawyScreen() {
               onPress={() => router.push('/calendar')}
             />
           </Card>
-        </AppSection>
-      )}
-
-      <AppSection
-        step="C"
-        title="Checklista formalności"
-        subtitle="Źródło w opisie pozycji: ocena sytuacji albo podpowiedź DEMO."
-      >
-        <View style={styles.sectionHeader}>
-          <Link href="/plan">
-            <Text style={styles.link}>Wszystkie filtry →</Text>
-          </Link>
-        </View>
-
-        {items.length === 0 ? (
-          <Card>
-            <Text style={styles.body}>
-              Brak pozycji formalnych dla tej sytuacji
-              {mode === 'rest'
-                ? ' (silnik nie zwrócił planu, a lokalny plan nie ma zadań zus/admin).'
-                : '.'}{' '}
-              Sprawdź świadczenia albo uzupełnij ankietę.
-            </Text>
-            <Button
-              label="Moje świadczenia"
-              onPress={() => router.push('/benefits')}
-            />
-          </Card>
-        ) : (
-          <ChecklistList
-            items={items.slice(0, 8)}
-            onStatusChange={setChecklistStatus}
-            compact
-          />
-        )}
-      </AppSection>
-
-      <AppSection title="Dokumenty i dane">
-        <Card style={styles.docsCard}>
           <Button
-            label="Asystent dokumentów"
+            label="Dokumenty"
+            variant="ghost"
             onPress={() => router.push('/documents')}
-            fullWidth
           />
-          <Button
-            label="Dane ZUS (symulacja)"
-            variant="secondary"
-            onPress={() => router.push('/zus')}
-            fullWidth
-          />
-        </Card>
-      </AppSection>
+        </View>
+      ) : null}
     </Screen>
+  );
+}
+
+function SummaryChip({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.summaryChip}>
+      <Text style={styles.summaryValue}>{value}</Text>
+      <Text style={styles.summaryLabel}>{label}</Text>
+    </View>
   );
 }
 
@@ -234,11 +216,34 @@ function applyOverrides(
 }
 
 const styles = StyleSheet.create({
+  summaryRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  summaryChip: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    alignItems: 'center',
+    gap: 2,
+  },
+  summaryValue: { ...typography.h2, color: colors.text },
+  summaryLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: spacing.sm,
   },
+  sectionTitle: { ...typography.h3, color: colors.text },
   cardHeading: { ...typography.bodyStrong, color: colors.text },
   body: {
     ...typography.body,
@@ -252,7 +257,6 @@ const styles = StyleSheet.create({
   },
   deadlineDate: { ...typography.h3, color: colors.warning, marginBottom: spacing.sm },
   deadlineCard: { gap: spacing.xs },
-  docsCard: { gap: spacing.sm },
   errorCard: {
     gap: spacing.sm,
     borderColor: colors.danger,
@@ -260,4 +264,10 @@ const styles = StyleSheet.create({
   },
   link: { ...typography.bodyStrong, color: colors.primary },
   muted: { ...typography.body, color: colors.textSecondary },
+  radarToggle: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  radarToggleText: { ...typography.bodyStrong, color: colors.primary },
+  radarBlock: { gap: spacing.md },
 });

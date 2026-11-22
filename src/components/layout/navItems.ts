@@ -1,36 +1,40 @@
 import type { LucideIcon } from 'lucide-react-native';
 import {
-  CalendarDays,
+  Calculator,
   ClipboardList,
-  MapPinned,
+  ListChecks,
   ShieldCheck,
   UserRound,
 } from 'lucide-react-native';
 
 export interface NavItem {
-  href: '/home' | '/calendar' | '/benefits' | '/map' | '/profile';
+  href: '/home' | '/sprawy' | '/benefits' | '/calculator' | '/profile';
   label: string;
   icon: LucideIcon;
 }
 
-/** Brief: Plan | Kalendarz | Świadczenia | Mapa | Profil */
+/**
+ * Etap 9 — role modułów (brief UX):
+ * Plan = co teraz · Sprawy = checklista · Świadczenia · Kalkulator · Profil
+ * Kalendarz / mapa / demo pozostają w menu skrótów.
+ */
 export const mainNavItems: NavItem[] = [
   { href: '/home', label: 'Plan', icon: ClipboardList },
-  { href: '/calendar', label: 'Kalendarz', icon: CalendarDays },
+  { href: '/sprawy', label: 'Sprawy', icon: ListChecks },
   { href: '/benefits', label: 'Świadczenia', icon: ShieldCheck },
-  { href: '/map', label: 'Mapa', icon: MapPinned },
+  { href: '/calculator', label: 'Kalkulator', icon: Calculator },
   { href: '/profile', label: 'Profil', icon: UserRound },
 ];
 
-/** Dodatkowe linki w expanded sidebar / profilu */
+/** Dodatkowe linki w expanded sidebar / menu skrótów */
 export const secondaryNavItems = [
   { href: '/home-menu' as const, label: 'Menu skrótów' },
-  { href: '/sprawy' as const, label: 'Moje sprawy' },
-  { href: '/other-benefits' as const, label: 'Inne świadczenia' },
-  { href: '/eligibility' as const, label: 'Ocena API (macierzyński)' },
+  { href: '/calendar' as const, label: 'Kalendarz' },
+  { href: '/map' as const, label: 'Mapa placówek' },
   { href: '/plan' as const, label: 'Checklista (filtry)' },
-  { href: '/calculator' as const, label: 'Kalkulator' },
   { href: '/documents' as const, label: 'Dokumenty' },
   { href: '/zus' as const, label: 'Dane ZUS' },
-  { href: '/demo' as const, label: 'Demo' },
+  { href: '/demo' as const, label: 'Profile demo' },
+  { href: '/other-benefits' as const, label: 'Inne świadczenia' },
+  { href: '/eligibility' as const, label: 'Ocena API (macierzyński)' },
 ];

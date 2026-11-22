@@ -207,8 +207,7 @@ export function OnboardingWizard() {
           {sensitive ? 'Dopasujemy spokojny plan do Twojej sytuacji' : 'Poznajmy Twoją sytuację'}
         </Text>
         <Text style={styles.subtitle}>
-          Krótka ankieta. Nieznane pola możesz pominąć — pokażemy, czego brakuje do pełnej
-          oceny.
+          Kilka pytań. Nieznane pola pomiń — uzupełnisz później.
         </Text>
         <Stepper current={step + 1} total={total} label={current.title} />
       </View>

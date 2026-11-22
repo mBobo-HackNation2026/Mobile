@@ -2,8 +2,8 @@ import type { ChecklistPriority, ChecklistStatus } from '@/types/journey';
 
 export const STATUS_LABEL: Record<ChecklistStatus, string> = {
   todo: 'Do zrobienia',
-  pending: 'Oczekujące',
-  done: 'Wykonane',
+  pending: 'W trakcie',
+  done: 'Zakończone',
 };
 
 export const STATUS_TONE: Record<

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, router, useLocalSearchParams } from 'expo-router';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -24,6 +25,9 @@ export function BenefitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const profile = useUserJourneyStore((s) => s.profile);
   const mode = getApiMode();
+  const [showConditions, setShowConditions] = useState(false);
+  const [showProcedure, setShowProcedure] = useState(false);
+  const [showSources, setShowSources] = useState(false);
 
   const query = useQuery({
     queryKey: ['eligibility', profile],
@@ -89,8 +93,8 @@ export function BenefitDetailScreen() {
       <DemoBanner
         message={
           mode === 'rest'
-            ? 'Ocena z FastAPI na podstawie Twoich danych — to nie jest decyzja ZUS ani połączenie z kontem ZUS.'
-            : 'Tryb demonstracyjny — dane przykładowe, bez połączenia z ZUS.'
+            ? 'Ocena informacyjna na podstawie Twoich danych — nie decyzja ZUS.'
+            : 'Dane demonstracyjne — nie decyzja ZUS.'
         }
       />
       {needsReview ? <LegalDisclaimer variant="verification" /> : <LegalDisclaimer />}
@@ -105,47 +109,34 @@ export function BenefitDetailScreen() {
           <Text style={styles.meta}>Adresat: {INSTITUTIONS[institutionId].fullLabel}</Text>
         ) : null}
       </View>
-      {formWarnings.length > 0 ? (
-        <Card>
-          <Badge label="Dokumenty — do weryfikacji" tone="warning" />
-          <Text style={styles.section}>Formularze i dokumenty</Text>
-          <Text style={styles.body}>
-            Poniższe informacje pochodzą z odpowiedzi silnika. Nie oznaczamy ich jako
-            pewnego obowiązku, dopóki nie potwierdzisz aktualnego wzoru na zus.pl (np. ZAM
-            po zmianach z 24.10.2026).
-          </Text>
-          {formWarnings.map((w) => (
-            <Text key={w} style={styles.meta}>
-              {w}
-            </Text>
-          ))}
-          {benefit.legalBasisNote ? (
-            <Text style={styles.meta}>Źródło: {benefit.legalBasisNote}</Text>
-          ) : null}
-        </Card>
-      ) : null}
 
       <Card>
-        <Text style={styles.section}>Dlaczego?</Text>
+        <Text style={styles.section}>W skrócie</Text>
         <Text style={styles.body}>{benefit.rationale}</Text>
-        {benefit.conditions.map((condition) => (
-          <View key={condition.id} style={styles.row}>
-            <Badge
-              label={CONDITION_LABEL[condition.state]}
-              tone={CONDITION_TONE[condition.state]}
-            />
-            <Text style={styles.rowTitle}>{condition.label}</Text>
-            <Text style={styles.meta}>{condition.explanation}</Text>
-          </View>
-        ))}
+        <Pressable onPress={() => setShowConditions((v) => !v)} accessibilityRole="button">
+          <Text style={styles.link}>
+            {showConditions ? 'Ukryj warunki' : 'Pokaż warunki oceny'} →
+          </Text>
+        </Pressable>
+        {showConditions
+          ? benefit.conditions.map((condition) => (
+              <View key={condition.id} style={styles.row}>
+                <Badge
+                  label={CONDITION_LABEL[condition.state]}
+                  tone={CONDITION_TONE[condition.state]}
+                />
+                <Text style={styles.rowTitle}>{condition.label}</Text>
+                <Text style={styles.meta}>{condition.explanation}</Text>
+              </View>
+            ))
+          : null}
       </Card>
 
       <Card>
         <Text style={styles.section}>Co mogę zrobić?</Text>
         {benefit.remedies.length === 0 ? (
           <Text style={styles.body}>
-            Brak osobnych działań naprawczych — możesz przejść do formalności albo
-            kalkulatora.
+            Możesz przejść do formalności albo sprawdzić kwotę w kalkulatorze.
           </Text>
         ) : (
           benefit.remedies.slice(0, 2).map((remedy) => (
@@ -162,17 +153,25 @@ export function BenefitDetailScreen() {
         ) : null}
         {benefit.alternatives.map((alt) => (
           <Link key={alt.id} href={`/benefits/${alt.id}`}>
-            <Text style={styles.link}>
-              Alternatywa: {alt.title} →
-            </Text>
+            <Text style={styles.link}>Alternatywa: {alt.title} →</Text>
           </Link>
         ))}
       </Card>
 
+      {formWarnings.length > 0 ? (
+        <Card>
+          <Badge label="Dokumenty — do weryfikacji" tone="warning" />
+          {formWarnings.map((w) => (
+            <Text key={w} style={styles.meta}>
+              {w}
+            </Text>
+          ))}
+        </Card>
+      ) : null}
+
       {benefit.warnings && benefit.warnings.length > 0 ? (
         <Card>
-          <Badge label="Ostrzeżenia silnika" tone="warning" />
-          <Text style={styles.section}>Uwagi do wyniku</Text>
+          <Badge label="Uwagi" tone="warning" />
           {benefit.warnings.map((warning) => (
             <Text key={warning} style={styles.warn}>
               • {warning}
@@ -183,65 +182,61 @@ export function BenefitDetailScreen() {
 
       <Card>
         <Text style={styles.section}>Jak uzyskać świadczenie?</Text>
-        {benefit.procedure ? (
-          <>
-            {benefit.procedure.formCode ? (
-              <Text style={styles.body}>
-                Formularz główny (z API): {benefit.procedure.formCode}
-              </Text>
-            ) : null}
-            <Text style={styles.body}>
-              Dokumenty z silnika (wymagane vs zależne od sytuacji — wg pola „when”):
-            </Text>
-            {benefit.procedure.documents.length > 0 ? (
-              benefit.procedure.documents.map((doc) => (
+        <Pressable onPress={() => setShowProcedure((v) => !v)} accessibilityRole="button">
+          <Text style={styles.link}>
+            {showProcedure ? 'Ukryj dokumenty i procedurę' : 'Pokaż dokumenty i procedurę'} →
+          </Text>
+        </Pressable>
+        {showProcedure ? (
+          benefit.procedure ? (
+            <>
+              {benefit.procedure.formCode ? (
+                <Text style={styles.body}>Formularz: {benefit.procedure.formCode}</Text>
+              ) : null}
+              {benefit.procedure.documents.map((doc) => (
                 <Text key={doc} style={styles.meta}>
                   • {doc}
                 </Text>
-              ))
-            ) : (
-              <Text style={styles.meta}>—</Text>
-            )}
-            <Text style={styles.body}>
-              Gdzie: {benefit.procedure.office ?? 'Do potwierdzenia'}
-            </Text>
-            <Text style={styles.body}>
-              Do kiedy:{' '}
-              {benefit.procedure.submitBy
-                ? formatDatePl(benefit.procedure.submitBy)
-                : 'Brak sztywnego terminu w odpowiedzi API'}
-            </Text>
-            {benefit.procedure.steps.map((step, index) => (
-              <Text key={step} style={styles.meta}>
-                {index + 1}. {step}
+              ))}
+              <Text style={styles.body}>
+                Gdzie: {benefit.procedure.office ?? 'Do potwierdzenia'}
               </Text>
-            ))}
-            {benefit.procedure.simulatedSubmission ? (
-              <Badge label="Składanie wniosku w app — tylko symulacja" tone="demo" />
-            ) : null}
-            <Button label="Przejdź do dokumentów" onPress={() => router.push('/documents')} />
-          </>
-        ) : benefit.planMissing ? (
-          <Text style={styles.body}>
-            Silnik nie zwrócił planu formalności dla tego wyniku (plan: null). Nie
-            uzupełniamy dokumentów ani terminów lokalnie — uzupełnij dane albo sprawdź
-            rozwiązania.
-          </Text>
-        ) : (
-          <Text style={styles.body}>
-            Najpierw usuń przeszkodę albo uzupełnij dane — wtedy pokażemy procedurę wniosku.
-          </Text>
-        )}
+              <Text style={styles.body}>
+                Do kiedy:{' '}
+                {benefit.procedure.submitBy
+                  ? formatDatePl(benefit.procedure.submitBy)
+                  : 'Brak sztywnego terminu'}
+              </Text>
+              {benefit.procedure.steps.map((step, index) => (
+                <Text key={step} style={styles.meta}>
+                  {index + 1}. {step}
+                </Text>
+              ))}
+              {benefit.procedure.simulatedSubmission ? (
+                <Badge label="Składanie w app — tylko symulacja" tone="demo" />
+              ) : null}
+              <Button label="Przejdź do dokumentów" onPress={() => router.push('/documents')} />
+            </>
+          ) : benefit.planMissing ? (
+            <Text style={styles.body}>
+              Brak planu formalności w odpowiedzi. Uzupełnij dane albo sprawdź rozwiązania.
+            </Text>
+          ) : (
+            <Text style={styles.body}>
+              Najpierw usuń przeszkodę albo uzupełnij dane — wtedy pokażemy procedurę.
+            </Text>
+          )
+        ) : null}
       </Card>
 
       <Card>
         <Text style={styles.section}>Ile mogę otrzymać?</Text>
         <Text style={styles.body}>
           {benefit.amountNote ??
-            'Kwota pojawi się po kalkulacji w backendzie. Nie liczymy jej lokalnie.'}
+            'Kwota pojawi się po kalkulacji. Nie liczymy jej lokalnie.'}
         </Text>
         <Button
-          label="Otwórz kalkulator dla tego świadczenia"
+          label="Otwórz kalkulator"
           variant="secondary"
           onPress={() =>
             router.push(`/calculator?benefit=${encodeURIComponent(benefit.id)}`)
@@ -249,20 +244,26 @@ export function BenefitDetailScreen() {
         />
       </Card>
 
-      <Card>
-        <Text style={styles.section}>Skąd ta informacja?</Text>
-        <Text style={styles.meta}>{benefit.legalBasisNote}</Text>
-        {benefit.sourceUrls.map((url) => (
-          <Text
-            key={url}
-            style={styles.link}
-            onPress={() => Linking.openURL(url)}
-            accessibilityRole="link"
-          >
-            {url}
-          </Text>
-        ))}
-      </Card>
+      <Pressable onPress={() => setShowSources((v) => !v)} accessibilityRole="button">
+        <Text style={[styles.link, styles.centerLink]}>
+          {showSources ? 'Ukryj źródła' : 'Skąd ta informacja?'}
+        </Text>
+      </Pressable>
+      {showSources ? (
+        <Card>
+          <Text style={styles.meta}>{benefit.legalBasisNote}</Text>
+          {benefit.sourceUrls.map((url) => (
+            <Text
+              key={url}
+              style={styles.link}
+              onPress={() => Linking.openURL(url)}
+              accessibilityRole="link"
+            >
+              {url}
+            </Text>
+          ))}
+        </Card>
+      ) : null}
     </Screen>
   );
 }
@@ -281,6 +282,7 @@ const styles = StyleSheet.create({
   row: { gap: spacing.xxs, marginBottom: spacing.md },
   rowTitle: { ...typography.bodyStrong, color: colors.text },
   link: { ...typography.bodyStrong, color: colors.primary, marginBottom: spacing.xs },
+  centerLink: { textAlign: 'center', marginVertical: spacing.sm },
   muted: { ...typography.body, color: colors.textSecondary },
   warn: { ...typography.body, color: colors.warning, marginBottom: spacing.xs },
 });

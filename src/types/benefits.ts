@@ -84,12 +84,13 @@ export interface BenefitAssessment {
   planMissing?: boolean;
 }
 
+/** Krótka etykieta na liście kart (Etap 9). */
 export const BENEFIT_STATUS_LABEL: Record<BenefitPresentationStatus, string> = {
-  likely_eligible: 'Prawdopodobnie spełniasz warunki',
-  obstacle_with_options: 'Przeszkoda — sprawdź możliwości',
-  not_eligible: 'Nie ustalono drogi do świadczenia',
-  insufficient_data: 'Brakuje danych do oceny',
-  needs_review: 'Wymagana indywidualna weryfikacja',
+  likely_eligible: 'Może Cię dotyczyć',
+  obstacle_with_options: 'Sprawdź możliwości',
+  not_eligible: 'Brak ścieżki w tej sytuacji',
+  insufficient_data: 'Uzupełnij dane',
+  needs_review: 'Do weryfikacji',
 };
 
 export const BENEFIT_STATUS_HEADLINE: Record<BenefitPresentationStatus, string> = {
@@ -114,11 +115,11 @@ export const BENEFIT_GROUP_ORDER: BenefitPresentationStatus[] = [
 ];
 
 export const BENEFIT_GROUP_TITLE: Record<BenefitPresentationStatus, string> = {
-  likely_eligible: 'Prawdopodobnie spełniasz warunki',
-  obstacle_with_options: 'Przeszkody z możliwymi rozwiązaniami',
-  insufficient_data: 'Wymagają uzupełnienia danych',
-  needs_review: 'Wymagają indywidualnej weryfikacji',
-  not_eligible: 'Nie ustalono uprawnienia',
+  likely_eligible: 'Może Cię dotyczyć',
+  obstacle_with_options: 'Sprawdź możliwości',
+  insufficient_data: 'Uzupełnij dane',
+  needs_review: 'Do weryfikacji',
+  not_eligible: 'Brak ścieżki w tej sytuacji',
 };
 
 export const REMEDY_KIND_LABEL: Record<RemedyKind, string> = {

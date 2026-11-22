@@ -86,34 +86,26 @@ export function BenefitsHubScreen() {
   return (
     <Screen
       title="Moje świadczenia"
-      subtitle="Ocena zasiłków ZUS na podstawie Twoich danych — z kolejnym krokiem do wniosku."
+      subtitle="Co może Ci przysługiwać i co zrobić dalej."
     >
       <ApiHealthBanner />
       <DemoBanner
         message={
           mode === 'rest'
-            ? 'Ocena z silnika. To nie decyzja ZUS — deklaracja w ankiecie nie zastępuje potwierdzenia.'
-            : 'Ocena demonstracyjna lokalna — nie decyzja ZUS.'
+            ? 'Ocena informacyjna — nie decyzja ZUS.'
+            : 'Ocena demonstracyjna — nie decyzja ZUS.'
         }
-      />
-
-      <QuickActionRow
-        actions={[
-          { label: 'Mój plan', href: '/home', hint: 'Oś czasu' },
-          { label: 'Moje sprawy', href: '/sprawy', hint: 'Formalności' },
-          { label: 'Kalkulator', href: '/calculator', hint: 'Kwoty' },
-        ]}
       />
 
       {query.data.missingInputs.length > 0 ? (
         <Card style={styles.missingCard}>
-          <Badge label="Brakuje danych" tone="primary" />
-          <Text style={styles.cardTitle}>Uzupełnij, żeby doprecyzować ocenę</Text>
-          <Text style={styles.body}>
+          <Badge label="Uzupełnij dane" tone="primary" />
+          <Text style={styles.cardTitle}>Potrzebujemy jeszcze informacji</Text>
+          <Text style={styles.body} numberOfLines={2}>
             Brakuje: {query.data.missingInputs.join(', ')}.
           </Text>
           <Button
-            label="Uzupełnij informacje"
+            label="Uzupełnij ankietę"
             onPress={() => router.push('/onboarding')}
           />
         </Card>
@@ -128,7 +120,7 @@ export function BenefitsHubScreen() {
             title={BENEFIT_GROUP_TITLE[status]}
             subtitle={
               status === 'needs_review'
-                ? 'Wynik wymaga potwierdzenia w ZUS lub u płatnika — nie traktuj go jako odmowy ani przyznania.'
+                ? 'Wymaga potwierdzenia w ZUS lub u płatnika.'
                 : undefined
             }
           >
@@ -139,40 +131,17 @@ export function BenefitsHubScreen() {
         );
       })}
 
-      <AppSection title="Poza silnikiem ZUS">
-        <Card style={styles.asideCard}>
-          <Badge label="Informacyjnie" tone="demo" />
-          <Text style={styles.cardTitle}>Inne świadczenia (800+, becikowe…)</Text>
-          <Text style={styles.body}>
-            Nie oceniamy ich w eBobo — brak silnika uprawnień. Tu zostają tylko zasiłki ZUS
-            z indywidualną oceną.
-          </Text>
-          <Button
-            label="Zobacz inne świadczenia"
-            variant="secondary"
-            onPress={() => router.push('/other-benefits')}
-          />
-        </Card>
-      </AppSection>
+      <QuickActionRow
+        actions={[
+          { label: 'Kalkulator', href: '/calculator', hint: 'Ile dostanę?' },
+          { label: 'Sprawy', href: '/sprawy', hint: 'Formalności' },
+          { label: 'Inne (800+)', href: '/other-benefits', hint: 'Informacyjnie' },
+        ]}
+      />
 
-      <AppSection title="Kalkulator">
-        <Card style={styles.asideCard}>
-          <Badge label={mode === 'rest' ? 'Silnik' : 'Demo'} tone="primary" />
-          <Text style={styles.body}>
-            Szacowane kwoty i warianty podziału urlopu rodzicielskiego, w tym 9 tygodni
-            zarezerwowanych dla drugiego rodzica (70%).
-          </Text>
-          <Button
-            label="Otwórz kalkulator"
-            onPress={() => router.push('/calculator')}
-          />
-        </Card>
-      </AppSection>
-
-      <Text style={styles.meta}>
-        Wersja reguł hubu: {query.data.ruleSetVersion}.{' '}
-        {query.data.warnings.join(' ')}
-      </Text>
+      {query.data.ruleSetVersion ? (
+        <Text style={styles.meta}>Wersja reguł: {query.data.ruleSetVersion}</Text>
+      ) : null}
       <LegalDisclaimer />
     </Screen>
   );
@@ -192,27 +161,16 @@ function BenefitCard({ benefit }: { benefit: BenefitAssessment }) {
         {institutionId ? <InstitutionMark institutionId={institutionId} /> : null}
       </View>
       <Text style={styles.cardTitle}>{benefit.title}</Text>
-      <Text style={styles.body}>{benefit.headline}</Text>
-      <Text style={styles.meta}>{benefit.summary}</Text>
-      {needsReview ? (
-        <Text style={styles.reviewHint}>
-          Wymagana weryfikacja — część warunków ustaliliśmy, ale wynik trzeba potwierdzić
-          w instytucji.
-        </Text>
-      ) : null}
-      {benefit.warnings && benefit.warnings.length > 0 ? (
-        <Badge label={`${benefit.warnings.length} ostrzeżeń`} tone="warning" />
-      ) : null}
-      {benefit.planMissing ? (
-        <Badge label="Brak planu formalności" tone="neutral" />
-      ) : null}
-      <Text style={styles.next}>Następny krok: {benefit.nextStepLabel}</Text>
+      <Text style={styles.body} numberOfLines={2}>
+        {benefit.headline}
+      </Text>
       <Button
         label={benefit.nextStepLabel}
         onPress={() => router.push(benefit.nextStepHref as Href)}
+        fullWidth
       />
       <Link href={`/benefits/${benefit.id}` as Href}>
-        <Text style={styles.link}>Szczegóły świadczenia →</Text>
+        <Text style={styles.link}>Szczegóły →</Text>
       </Link>
     </Card>
   );

@@ -147,8 +147,8 @@ export function CalculatorScreen() {
 
   return (
     <Screen
-      title="Kalkulator świadczeń"
-      subtitle="Profesjonalny szacunek kwot i wariantów — wyłącznie z silnika FastAPI."
+      title="Kalkulator"
+      subtitle="Ile możesz otrzymać — szacunek z silnika świadczeń."
     >
       <ApiHealthBanner />
       <DemoBanner
