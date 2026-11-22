@@ -120,4 +120,4 @@ Scenariusze HTTP 404/422/timeout — obsługa przez istniejący `apiRequest` + U
 
 ## 10. Numer commita
 
-*(uzupełnij po `git commit`)*
+`8bd4b2f` — `feat: add on-demand AI explanations on benefit details`
