@@ -48,7 +48,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test:regression": "node scripts/regression-formalities.mjs && npx --yes tsx scripts/regression-formalities.ts && npx --yes tsx scripts/regression-legal-advisor.ts && npx --yes tsx scripts/regression-eligibility-dashboard.ts",
+    "test:regression": "node scripts/regression-formalities.mjs && npx --yes tsx scripts/regression-formalities.ts && npx --yes tsx scripts/regression-legal-advisor.ts && npx --yes tsx scripts/regression-eligibility-dashboard.ts && npx --yes tsx scripts/regression-official-links.ts && npx --yes tsx scripts/regression-calculator-context.ts",
     "smoke:openrouter": "node scripts/smoke-openrouter.mjs",
     "export:web": "expo export --platform web",
     "deploy:web": "expo export --platform web && eas deploy --prod",

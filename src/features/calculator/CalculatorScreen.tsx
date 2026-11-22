@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -41,18 +41,24 @@ import { useUserJourneyStore } from '@/store/useUserJourneyStore';
 import { colors, spacing, typography } from '@/theme';
 
 export function CalculatorScreen() {
-  const params = useLocalSearchParams<{ benefit?: string }>();
+  const params = useLocalSearchParams<{
+    benefit?: string;
+    from?: string;
+    compare?: string;
+  }>();
   const profile = useUserJourneyStore((s) => s.profile);
   const { columns, isCompact } = useAdaptiveLayout();
   const mode = getApiMode();
 
-  const initialBenefit =
+  const paramBenefit =
     typeof params.benefit === 'string' &&
     (BENEFIT_CODES as readonly string[]).includes(params.benefit)
       ? (params.benefit as BenefitCode)
-      : 'zasilek_macierzynski_urlop_macierzynski';
+      : null;
 
-  const [benefitCode, setBenefitCode] = useState<BenefitCode>(initialBenefit);
+  const [benefitCode, setBenefitCode] = useState<BenefitCode>(
+    paramBenefit ?? 'zasilek_macierzynski_urlop_macierzynski',
+  );
   const [incomeA, setIncomeA] = useState('7000');
   const [incomeB, setIncomeB] = useState('6000');
   const [fullTime, setFullTime] = useState(true);
@@ -63,6 +69,23 @@ export function CalculatorScreen() {
   const [calcResult, setCalcResult] = useState<CalculatedAmount | null>(null);
   const [compareResult, setCompareResult] =
     useState<ParentalLeaveCompareResponse | null>(null);
+
+  const fromBenefit = params.from === 'benefit' && paramBenefit != null;
+  const preferCompare =
+    params.compare === '1' || benefitCode === 'urlop_rodzicielski';
+
+  useEffect(() => {
+    if (paramBenefit) {
+      setBenefitCode(paramBenefit);
+      setCalcResult(null);
+      setCompareResult(null);
+    }
+  }, [paramBenefit]);
+
+  useEffect(() => {
+    setZaZyciem(profile.zaZyciemCertificate === true);
+    setFullDose21(profile.fullDoseClaimedWithin21Days !== false);
+  }, [profile.zaZyciemCertificate, profile.fullDoseClaimedWithin21Days]);
 
   const baseRequest = useMemo(
     () => profileToEligibilityCheckRequest(profile),
@@ -145,20 +168,42 @@ export function CalculatorScreen() {
   const mockResult = mode !== 'rest' ? calcMutation.data : null;
   const twoColumn = columns > 1;
 
+  const backToBenefitHref = (
+    paramBenefit
+      ? `/benefits/${encodeURIComponent(paramBenefit)}`
+      : '/benefits'
+  ) as Href;
+
   return (
     <Screen
       title="Kalkulator"
       subtitle="Ile możesz otrzymać — szacunek z silnika świadczeń."
+      backFallbackHref={fromBenefit ? backToBenefitHref : ('/benefits' as Href)}
     >
       <ApiHealthBanner />
       <DemoBanner
         message={
           mode === 'rest'
             ? 'Wyniki z silnika świadczeń. Przy awarii API nie podstawiamy przykładowej kwoty.'
-            : 'Tryb demonstracyjny — lokalne przykłady, nie wynik silnika.'
+            : 'Dane przykładowe — lokalne przykłady, nie wynik silnika.'
         }
       />
       <LegalDisclaimer />
+
+      {fromBenefit ? (
+        <Card style={styles.contextCard}>
+          <Badge label="Kontekst świadczenia" tone="primary" />
+          <Text style={styles.body}>
+            Liczymy: {BENEFIT_CODE_LABEL[benefitCode]}. Dane z ankiety są już
+            uwzględnione — uzupełnij tylko dochód i warianty poniżej.
+          </Text>
+          <Button
+            label="Wróć do świadczenia"
+            variant="ghost"
+            onPress={() => router.push(backToBenefitHref)}
+          />
+        </Card>
+      ) : null}
 
       {mode === 'rest' ? (
         <View style={[styles.stack, twoColumn && styles.stackDesktop]}>
@@ -265,56 +310,59 @@ export function CalculatorScreen() {
           </View>
 
           <View style={styles.fullWidth}>
-            <CalculatorSection
-              step="C"
-              title="Porównanie wariantów"
-              subtitle="100%/70%, 81,5% i podział między rodziców — gdy silnik odpowie."
-            >
-              <Card style={styles.formCard}>
-                <Text style={styles.body}>
-                  Porównanie trzech wariantów podziału urlopu rodzicielskiego. Nie
-                  oznaczamy automatycznie „najlepszego” wariantu.
-                </Text>
-                <TextField
-                  label="Dochód drugiego rodzica"
-                  value={incomeB}
-                  onChangeText={setIncomeB}
-                  keyboardType="numeric"
-                  hint="W PLN — używane tylko w porównaniu."
-                />
-                <Button
-                  label={
-                    compareMutation.isPending
-                      ? 'Porównujemy…'
-                      : 'Porównaj 3 warianty podziału'
-                  }
-                  variant="secondary"
-                  onPress={() => compareMutation.mutate()}
-                  disabled={compareMutation.isPending}
-                  fullWidth={isCompact}
-                />
-                {compareMutation.isError ? (
-                  <CalculatorErrorPanel
-                    message={apiErrorMessage(
-                      compareMutation.error,
-                      'Porównanie niedostępne. Spróbuj ponownie — bez podstawiania kwoty.',
-                    )}
-                    onRetry={() => compareMutation.mutate()}
-                    pending={compareMutation.isPending}
+            {preferCompare || benefitCode === 'urlop_rodzicielski' ? (
+              <CalculatorSection
+                step="C"
+                title="Jak podzielić urlop między rodziców?"
+                subtitle="100%/70%, 81,5% i podział tygodni — wyłącznie z odpowiedzi silnika."
+              >
+                <Card style={styles.formCard}>
+                  <Text style={styles.body}>
+                    Porównanie trzech wariantów podziału urlopu rodzicielskiego. Nie
+                    oznaczamy automatycznie „najlepszego” wariantu. Nieprzenoszalne
+                    tygodnie drugiego rodzica nie są lokalnie przeliczane na 81,5%.
+                  </Text>
+                  <TextField
+                    label="Dochód drugiego rodzica"
+                    value={incomeB}
+                    onChangeText={setIncomeB}
+                    keyboardType="numeric"
+                    hint="W PLN — używane tylko w porównaniu."
+                  />
+                  <Button
+                    label={
+                      compareMutation.isPending
+                        ? 'Porównujemy…'
+                        : 'Porównaj warianty'
+                    }
+                    variant="secondary"
+                    onPress={() => compareMutation.mutate()}
+                    disabled={compareMutation.isPending}
+                    fullWidth={isCompact}
+                  />
+                  {compareMutation.isError ? (
+                    <CalculatorErrorPanel
+                      message={apiErrorMessage(
+                        compareMutation.error,
+                        'Porównanie niedostępne. Spróbuj ponownie — bez podstawiania kwoty. Status uprawnienia się nie zmienia.',
+                      )}
+                      onRetry={() => compareMutation.mutate()}
+                      pending={compareMutation.isPending}
+                    />
+                  ) : null}
+                  {compareMutation.isPending && !compareResult ? (
+                    <Text style={styles.meta}>Pobieramy warianty z silnika…</Text>
+                  ) : null}
+                </Card>
+
+                {compareResult ? (
+                  <CalculatorComparePanel
+                    result={compareResult}
+                    fullDose21={fullDose21}
                   />
                 ) : null}
-                {compareMutation.isPending && !compareResult ? (
-                  <Text style={styles.meta}>Pobieramy warianty z silnika…</Text>
-                ) : null}
-              </Card>
-
-              {compareResult ? (
-                <CalculatorComparePanel
-                  result={compareResult}
-                  fullDose21={fullDose21}
-                />
-              ) : null}
-            </CalculatorSection>
+              </CalculatorSection>
+            ) : null}
 
             {calcResult ? (
               <CalculatorSection
@@ -323,6 +371,40 @@ export function CalculatorScreen() {
                 subtitle="Podstawa wymiaru, okresy i stawki — na żądanie."
               >
                 <CalculatorDetailsPanel result={calcResult} />
+              </CalculatorSection>
+            ) : null}
+
+            {calcResult || compareResult ? (
+              <CalculatorSection
+                step="E"
+                title="Co możesz zrobić dalej?"
+                subtitle="Kwota to dopiero początek — przygotuj dokumenty i właściwy kanał."
+              >
+                <Card style={styles.formCard}>
+                  <Button
+                    label="Sprawdź potrzebne dokumenty"
+                    variant="secondary"
+                    onPress={() =>
+                      router.push(
+                        (paramBenefit
+                          ? `/benefits/${encodeURIComponent(paramBenefit)}`
+                          : '/documents') as Href,
+                      )
+                    }
+                    fullWidth
+                  />
+                  <Button
+                    label="Sprawdź terminy w sprawach"
+                    variant="secondary"
+                    onPress={() => router.push('/sprawy')}
+                    fullWidth
+                  />
+                  <Button
+                    label="Wróć do świadczenia"
+                    onPress={() => router.push(backToBenefitHref)}
+                    fullWidth
+                  />
+                </Card>
               </CalculatorSection>
             ) : null}
           </View>
@@ -442,5 +524,9 @@ const styles = StyleSheet.create({
   mockTitle: {
     ...typography.bodyStrong,
     color: colors.text,
+  },
+  contextCard: {
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
 });

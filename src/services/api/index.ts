@@ -90,6 +90,15 @@ export type { CalculatedAmount } from '@/services/api/benefitsCalculate';
 export { compareParentalLeave } from '@/services/api/parentalCompare';
 export type { ParentalLeaveCompareResponse } from '@/services/api/parentalCompare';
 export {
+  fetchFormalitiesForBenefit,
+  fetchGeneralFormalities,
+  FORMALITIES_PATHS,
+} from '@/services/api/formalities';
+export type {
+  FormalitiesFetchResult,
+  FormalitiesResponse,
+} from '@/services/api/formalities';
+export {
   explainBenefitEligibility,
   isExplainStatusAligned,
   LEGAL_ADVISOR_TIMEOUT_MS,

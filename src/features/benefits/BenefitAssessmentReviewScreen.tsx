@@ -151,7 +151,7 @@ export function BenefitAssessmentReviewScreen() {
         message={
           mode === 'rest'
             ? 'Ocena informacyjna — nie decyzja ZUS. AI nie przyznaje świadczenia.'
-            : 'Ocena demonstracyjna — nie decyzja ZUS.'
+            : 'Ocena na danych przykładowych — nie decyzja ZUS.'
         }
       />
       <LegalDisclaimer variant="verification" />
@@ -336,6 +336,20 @@ function ActionList({
     }
   }
 
+  steps.push({
+    key: 'calc',
+    label: 'Oblicz wysokość świadczenia',
+    href: `/calculator?benefit=${encodeURIComponent(benefit.id)}&from=benefit`,
+  });
+
+  if (benefit.id === 'urlop_rodzicielski') {
+    steps.push({
+      key: 'compare',
+      label: 'Porównaj warianty podziału urlopu',
+      href: `/calculator?benefit=${encodeURIComponent(benefit.id)}&from=benefit&compare=1`,
+    });
+  }
+
   if (benefit.procedure?.documents[0]) {
     steps.push({
       key: 'docs',
@@ -418,7 +432,8 @@ function parentFriendlyReason(benefit: BenefitAssessment): string {
 /** Ukrywa surowe ID ścieżek API przed rodzicem. */
 function parentFriendlyLegalNote(note: string): string {
   return note
-    .replace(/FastAPI eligibility\/check\/[^\s·]+/gi, 'Ocena silnika uprawnień')
+    .replace(/FastAPI eligibility\/check\/[^\s·]+/gi, 'Ocena uprawnień')
+    .replace(/Ocena silnika uprawnień/gi, 'Ocena uprawnień')
     .replace(/rules_version\s*\d+/gi, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
