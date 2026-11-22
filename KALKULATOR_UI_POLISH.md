@@ -2,7 +2,7 @@
 
 **Gałąź:** `feature/ebobo-frontend-mvp`  
 **Commit Etapu 4 (zabezpieczenie):** `be59269`  
-**Commit Etapu 5 (ten polish):** *patrz `git rev-parse --short HEAD` po commicie poniżej*  
+**Commit Etapu 5 (ten polish):** `1750126`  
 **Zakres:** wyłącznie UI/UX kalkulatora — **bez** zmiany logiki obliczeń, uprawnień ani kontraktu API.
 
 ---
@@ -84,4 +84,4 @@ Pozostałe ekrany (nawigacja Plan / Świadczenia / Sprawy) bez zmian kodu — sm
 ## 6. Numer commita
 
 - Etap 4 secured: **`be59269`**
-- Etap 5 UI polish: **zostanie uzupełniony przy commicie** (`style: polish calculator UI…`)
+- Etap 5 UI polish: **`1750126`**
