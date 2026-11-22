@@ -288,14 +288,15 @@ function resolveNextStep(
   cautious: boolean,
   benefitId: string,
 ): { label: string; href: string } {
+  const reviewHref = `/benefits/${encodeURIComponent(benefitId)}/review`;
   const related = remedies.find((r) => r.kind === 'alternative_benefit');
   if (status === 'obstacle_with_options' && related) {
-    return { label: related.ctaLabel, href: related.ctaHref };
+    return { label: 'Sprawdź szczegóły', href: reviewHref };
   }
   if (cautious) {
     return {
-      label: 'Zobacz ostrzeżenia i szczegóły',
-      href: `/benefits/${benefitId}`,
+      label: 'Sprawdź szczegóły',
+      href: reviewHref,
     };
   }
   switch (status) {
@@ -306,19 +307,19 @@ function resolveNextStep(
       };
     case 'obstacle_with_options':
       return {
-        label: 'Sprawdź możliwe rozwiązania',
-        href: `/benefits/${benefitId}/solutions`,
+        label: 'Sprawdź szczegóły',
+        href: reviewHref,
       };
     case 'insufficient_data':
-      return { label: 'Uzupełnij informacje', href: '/onboarding' };
+      return { label: 'Sprawdź szczegóły', href: reviewHref };
     case 'needs_review':
       return {
-        label: remedies[0]?.ctaLabel ?? 'Zobacz szczegóły',
-        href: remedies[0]?.ctaHref ?? `/benefits/${benefitId}`,
+        label: 'Sprawdź szczegóły',
+        href: reviewHref,
       };
     case 'not_eligible':
     default:
-      return { label: 'Zobacz szczegóły oceny', href: `/benefits/${benefitId}` };
+      return { label: 'Sprawdź szczegóły', href: reviewHref };
   }
 }
 

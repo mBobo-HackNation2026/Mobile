@@ -79,6 +79,7 @@ export {
   isCautiousEligibilityResult,
   isKnownBenefitCode,
 } from '@/services/api/eligibilityCheck';
+export { mapEligibilityCheckToBenefit } from '@/services/api/mapEligibilityCheckToBenefit';
 export type {
   BenefitCode,
   EligibilityCheckResult,

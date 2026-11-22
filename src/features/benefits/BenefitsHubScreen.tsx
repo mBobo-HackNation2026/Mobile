@@ -13,7 +13,11 @@ import { InstitutionMark } from '@/components/ui/InstitutionMark';
 import { LegalDisclaimer } from '@/components/ui/LegalDisclaimer';
 import { QuickActionRow } from '@/components/ui/QuickActionRow';
 import { Screen } from '@/components/ui/Screen';
-import { BENEFIT_TONE } from '@/features/benefits/benefitUi';
+import {
+  assessmentReviewHref,
+  BENEFIT_TONE,
+  shouldOpenAssessmentReview,
+} from '@/features/benefits/benefitUi';
 import { resolveBenefitInstitution } from '@/features/benefits/resolveBenefitInstitution';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import { eligibilityService, getApiMode } from '@/services/api';
@@ -150,6 +154,8 @@ export function BenefitsHubScreen() {
 function BenefitCard({ benefit }: { benefit: BenefitAssessment }) {
   const institutionId = resolveBenefitInstitution(benefit);
   const needsReview = benefit.status === 'needs_review';
+  const openReview = shouldOpenAssessmentReview(benefit.status);
+  const reviewHref = assessmentReviewHref(benefit.id);
 
   return (
     <Card style={needsReview ? styles.reviewCard : undefined}>
@@ -164,13 +170,23 @@ function BenefitCard({ benefit }: { benefit: BenefitAssessment }) {
       <Text style={styles.body} numberOfLines={2}>
         {benefit.headline}
       </Text>
-      <Button
-        label={benefit.nextStepLabel}
-        onPress={() => router.push(benefit.nextStepHref as Href)}
-        fullWidth
-      />
-      <Link href={`/benefits/${benefit.id}` as Href}>
-        <Text style={styles.link}>Szczegóły →</Text>
+      {openReview ? (
+        <Button
+          label="Sprawdź szczegóły"
+          onPress={() => router.push(reviewHref as Href)}
+          fullWidth
+        />
+      ) : (
+        <Button
+          label={benefit.nextStepLabel}
+          onPress={() => router.push(benefit.nextStepHref as Href)}
+          fullWidth
+        />
+      )}
+      <Link href={(openReview ? reviewHref : `/benefits/${benefit.id}`) as Href}>
+        <Text style={styles.link}>
+          {openReview ? 'Szczegóły oceny →' : 'Szczegóły →'}
+        </Text>
       </Link>
     </Card>
   );

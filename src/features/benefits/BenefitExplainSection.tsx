@@ -29,12 +29,22 @@ import type { ParentProfile } from '@/types/journey';
 type Props = {
   benefit: BenefitAssessment;
   profile: ParentProfile;
+  /** Domyślnie: „Wyjaśnij mój wynik”. */
+  ctaLabel?: string;
+  loadingHint?: string;
+  onExplainResult?: (data: LegalAdvisorExplainResponse | null) => void;
 };
 
 /**
  * Wyjaśnienie wyniku na żądanie — nie zmienia statusu eligibility.
  */
-export function BenefitExplainSection({ benefit, profile }: Props) {
+export function BenefitExplainSection({
+  benefit,
+  profile,
+  ctaLabel = 'Wyjaśnij mój wynik',
+  loadingHint = 'Przygotowujemy wyjaśnienie Twojej sytuacji…',
+  onExplainResult,
+}: Props) {
   const mode = getApiMode();
   const [showLegal, setShowLegal] = useState(false);
   const [result, setResult] = useState<LegalAdvisorExplainResponse | null>(null);
@@ -55,7 +65,8 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
     setResult(null);
     setStatusMismatch(false);
     setShowLegal(false);
-  }, [benefit.id, profileKey]);
+    onExplainResult?.(null);
+  }, [benefit.id, profileKey, onExplainResult]);
 
   useEffect(() => {
     return () => {
@@ -68,6 +79,7 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
       abortRef.current?.abort();
       setResult(null);
       setStatusMismatch(false);
+      onExplainResult?.(null);
       const controller = new AbortController();
       abortRef.current = controller;
       const gen = ++requestGen.current;
@@ -103,8 +115,12 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
           engine: benefit.engineStatus,
           explain: data.status,
         });
+        setResult(data);
+        onExplainResult?.(null);
+        return;
       }
       setResult(data);
+      onExplainResult?.(data);
     },
     onError: (error) => {
       if (isUserAbortError(error)) return;
@@ -144,7 +160,7 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
 
       {!result && !mutation.isPending && !showError ? (
         <Button
-          label="Wyjaśnij mój wynik"
+          label={ctaLabel}
           variant={prominent ? 'primary' : 'secondary'}
           onPress={() => mutation.mutate()}
           disabled={mutation.isPending}
@@ -155,9 +171,7 @@ export function BenefitExplainSection({ benefit, profile }: Props) {
       {mutation.isPending ? (
         <View style={styles.loading} accessibilityRole="progressbar">
           <ActivityIndicator color={colors.primary} />
-          <Text style={styles.loadingText}>
-            Przygotowujemy wyjaśnienie Twojej sytuacji…
-          </Text>
+          <Text style={styles.loadingText}>{loadingHint}</Text>
           <Text style={styles.meta}>Może to potrwać kilkanaście sekund.</Text>
         </View>
       ) : null}

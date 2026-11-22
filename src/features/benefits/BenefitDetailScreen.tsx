@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { Link, router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -12,7 +12,13 @@ import { InstitutionMark } from '@/components/ui/InstitutionMark';
 import { LegalDisclaimer } from '@/components/ui/LegalDisclaimer';
 import { Screen } from '@/components/ui/Screen';
 import { BenefitExplainSection } from '@/features/benefits/BenefitExplainSection';
-import { BENEFIT_TONE, CONDITION_LABEL, CONDITION_TONE } from '@/features/benefits/benefitUi';
+import {
+  assessmentReviewHref,
+  BENEFIT_TONE,
+  CONDITION_LABEL,
+  CONDITION_TONE,
+  shouldOpenAssessmentReview,
+} from '@/features/benefits/benefitUi';
 import { resolveBenefitInstitution } from '@/features/benefits/resolveBenefitInstitution';
 import { apiErrorMessage } from '@/lib/apiErrorMessage';
 import { formatDatePl } from '@/lib/format';
@@ -85,6 +91,7 @@ export function BenefitDetailScreen() {
   const institutionId = resolveBenefitInstitution(benefit);
   const needsReview =
     benefit.status === 'needs_review' || benefit.requiresVerification;
+  const openReview = shouldOpenAssessmentReview(benefit.status);
   const formWarnings = (benefit.warnings ?? []).filter((w) =>
     /Z-3b|ZAM|formularz|druk/i.test(w),
   );
@@ -110,6 +117,21 @@ export function BenefitDetailScreen() {
           <Text style={styles.meta}>Adresat: {INSTITUTIONS[institutionId].fullLabel}</Text>
         ) : null}
       </View>
+
+      {openReview ? (
+        <Card>
+          <Text style={styles.section}>Nie wszystko jasne?</Text>
+          <Text style={styles.body}>
+            Sprawdź powód oceny, popraw odpowiedzi i — jeśli chcesz — uzyskaj wyjaśnienie AI.
+            AI nie zmienia wyniku silnika.
+          </Text>
+          <Button
+            label="Sprawdź szczegóły"
+            onPress={() => router.push(assessmentReviewHref(benefit.id) as Href)}
+            fullWidth
+          />
+        </Card>
+      ) : null}
 
       <Card>
         <Text style={styles.section}>W skrócie</Text>
